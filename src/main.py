@@ -1,12 +1,17 @@
-from viewer_with_button import Open3DViewer
-from data_manager import DataManager
+import sys
+from view.main_window import MainWindow
+from controller.controller import Controller
+from PyQt5.QtWidgets import QApplication
 
 
 def main():
-    data_manager = DataManager()
+    app = QApplication([])
 
-    viewer = Open3DViewer(data_manager)
-    viewer.run()
+    controller = Controller()
+    window = MainWindow(controller)
+
+    window.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
