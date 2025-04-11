@@ -19,8 +19,6 @@ class MainWindow(QMainWindow):
         self.theme = "white"
 
         self.plotter_actors = {}
-        # self.cloud_items = {}
-        # self.pointclouds_to_remove = []
 
         self.create_ui()
 
@@ -198,9 +196,9 @@ class MainWindow(QMainWindow):
         )
         sub_layout.addWidget(checkbox)
 
-        label_text = self.get_label_text(name)
-        label = EditableLabel(label_text)
-        label.text_changed.connect(
+        label = EditableLabel(name)
+        label.setMinimumWidth(180)
+        label.text_confirmed.connect(
             lambda text, item=item: self.change_pointcloud_name(item, text)
         )
         label.setObjectName("pcd_name_label")
@@ -251,40 +249,32 @@ class MainWindow(QMainWindow):
 
     def change_pointcloud_name(self, item, new_name=None):
         _, label, _ = self.get_pointcloud_widgets_from_item(item)
-        name = label.toolTip()
-
-        is_available = self.controller.is_pointcloud_name_available(new_name)
-
-        try:
-            label.line_edit.editingFinished.disconnect()
-        except TypeError:
-            pass
+        name = label.text()
 
         if new_name and new_name != name:
+            is_available = self.controller.is_pointcloud_name_available(new_name)
+
             if is_available:
                 self.plotter_actors[new_name] = self.plotter_actors.pop(name)
-                self.controller.rename_pointcloud(name, new_name)
                 self.plotter_actors[new_name].name = new_name
-                label_text = self.get_label_text(new_name)
-                label.setText(label_text)
+                self.controller.rename_pointcloud(name, new_name)
+                label.apply_validated_text(new_name)
                 label.setToolTip(new_name)
+
                 self.info_label.setText(f"Pointcloud renamed: {name} -> {new_name}")
                 self.info_label.setStyleSheet("QLabel#info_label {color: green}")
 
             else:
+                label.cancel_edit()
+            
                 self.info_label.setText(f"Pointcloud name already exists: {new_name}")
                 self.info_label.setStyleSheet("QLabel#info_label {color: red}")
-                label.line_edit.setText(name)
 
         else:
+            label.cancel_edit()
+
             self.info_label.setText("Pointcloud name unchanged")
             self.info_label.setStyleSheet("QLabel#info_label {color: black}")
-            label.line_edit.setText(name)
-
-        label.label.show()
-        label.line_edit.hide()
-
-        label.line_edit.editingFinished.connect(label.leave_edit_mode)
 
     def trigger_pointcloud_rename(self, item):
         _, label, _ = self.get_pointcloud_widgets_from_item(item)
@@ -307,12 +297,5 @@ class MainWindow(QMainWindow):
         self.info_label.setText(f"Pointcloud removed: {name}")
         self.info_label.setStyleSheet("QLabel#info_label {color: green}")
 
-    def get_label_text(self, name):
-        max_label_length = 20
-
-        if len(name) > max_label_length:
-            label_text = name[:max_label_length] + "..."
-        else:
-            label_text = name
-
-        return label_text
+    # def on_add_filter_button_clicked(self):
+    #     print("Ajouter un filtre")
