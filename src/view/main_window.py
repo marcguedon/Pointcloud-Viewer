@@ -1,17 +1,17 @@
-from re import L
-import pyvista as pv
 from pyvistaqt import QtInteractor
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
 from editable_label import EditableLabel
+from view.add_filter_window import AddFilterDialog
+from controller.controller import Controller
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, controller, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.controller = controller
+        self.controller = Controller()
 
         self.setWindowTitle("Pointclouds Viewer")
         self.resize(1920, 1080)
@@ -67,10 +67,13 @@ class MainWindow(QMainWindow):
 
     def create_control_panel(self):
         control_panel = QVBoxLayout()
+        control_panel.setSpacing(10)
 
         pointcloud_layout = QVBoxLayout()
+        pointcloud_layout.setSpacing(5)
         control_panel.addLayout(pointcloud_layout)
 
+        # Pointclouds
         load_pointcloud_btn = QPushButton("Load pointcloud")
         load_pointcloud_btn.setToolTip("Load pointcloud")
         load_pointcloud_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -86,19 +89,27 @@ class MainWindow(QMainWindow):
         )
         pointcloud_layout.addWidget(self.pointclouds_tree)
 
-        # filter_layout = QVBoxLayout()
-        # control_panel.addLayout(filter_layout)
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        control_panel.addWidget(separator)
 
-        # add_filter_btn = QPushButton("Add Filter")
-        # add_filter_btn.setToolTip("Add filter")
-        # add_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        # add_filter_btn.clicked.connect(self.on_add_filter_button_clicked)
-        # filter_layout.addWidget(add_filter_btn)
+        # Filters
+        filter_layout = QVBoxLayout()
+        filter_layout.setSpacing(5)
+        control_panel.addLayout(filter_layout)
 
-        # self.filters_tree = QTreeWidget()
-        # self.filters_tree.setHeaderLabel("Filters")
-        # filter_layout.addWidget(self.filters_tree)
+        add_filter_btn = QPushButton("Add Filter")
+        add_filter_btn.setToolTip("Add filter")
+        add_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        add_filter_btn.clicked.connect(self.on_add_filter_button_clicked)
+        filter_layout.addWidget(add_filter_btn)
 
+        self.filters_tree = QTreeWidget()
+        self.filters_tree.setHeaderLabel("Filters")
+        filter_layout.addWidget(self.filters_tree)
+
+        # Quit button
         quit_btn = QPushButton("Quit")
         quit_btn.setToolTip("Quit application")
         quit_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -141,8 +152,10 @@ class MainWindow(QMainWindow):
 
         self.show_pointcloud(name, pointcloud_data)
 
-    # def on_add_filter_button_clicked(self):
-    #     print("Ajouter un filtre")
+    def on_add_filter_button_clicked(self):
+        add_filter_window = AddFilterDialog()
+        add_filter_window.setWindowTitle("Add Filter")
+        add_filter_window.exec_()
 
     def show_pointclouds_menu(self, position):
         item = self.pointclouds_tree.itemAt(position)
@@ -296,6 +309,3 @@ class MainWindow(QMainWindow):
         self.controller.delete_pointcloud(name)
         self.info_label.setText(f"Pointcloud removed: {name}")
         self.info_label.setStyleSheet("QLabel#info_label {color: green}")
-
-    # def on_add_filter_button_clicked(self):
-    #     print("Ajouter un filtre")

@@ -1,14 +1,12 @@
 import sys
 from view.main_window import MainWindow
-from controller.controller import Controller
 from PyQt5.QtWidgets import QApplication
 
 
 def main():
     app = QApplication([])
 
-    controller = Controller()
-    window = MainWindow(controller)
+    window = MainWindow()
 
     window.show()
     sys.exit(app.exec())
