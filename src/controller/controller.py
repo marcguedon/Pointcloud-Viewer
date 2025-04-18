@@ -1,6 +1,7 @@
 import os
 import pyvista as pv
 from model.pointcloud import Pointcloud
+from model.filter import Filter
 
 
 class Controller:
@@ -22,6 +23,7 @@ class Controller:
         self.pointclouds_list = []
         self.filters_list = []
 
+    # POINTCLOUDS
     def load_pointcloud(self, path):
         name = self.get_name_from_path(path)
         pointcloud_data = pv.read(path)
@@ -51,12 +53,64 @@ class Controller:
                 pointcloud.name = new_name
                 break
 
-    def get_pointcloud_by_name(self, name):
+    def get_pointcloud_by_name(self, name) -> Pointcloud | None:
         for pointcloud in self.pointclouds_list:
             if pointcloud.name == name:
                 return pointcloud
+
         return None
 
+    # FILTERS
+    def add_filter(self, name, bounds, color):  # TODO Manage the name
+        box = pv.Box(bounds=bounds)
+        self.filters_list.append(Filter(name, box, color))
+
+        return box
+
+    def delete_filter(self, name):
+        for filter in self.filters_list:
+            if filter.name == name:
+                self.filters_list.remove(filter)
+                break
+
+    def rename_filter(self, old_name, new_name):
+        for filter in self.filters_list:
+            if filter.name == old_name:
+                filter.name = new_name
+                break
+
+    def is_filter_name_available(self, name):
+        return all(filter.name != name for filter in self.filters_list)
+
+    def set_filter_name(self, old_name, new_name):
+        for filter in self.filters_list:
+            if filter.name == old_name:
+                filter.name = new_name
+                break
+
+    def get_filter_by_name(self, name) -> Filter | None:
+        for filter in self.filters_list:
+            if filter.name == name:
+                return filter
+
+        return None
+
+    def set_filter_bounds(self, name, bounds):
+        for filter in self.filters_list:
+            if filter.name == name:
+                box = pv.Box(bounds=bounds)
+                filter.box = box
+                return box
+        
+        return None
+
+    def set_filter_color(self, name, color):
+        for filter in self.filters_list:
+            if filter.name == name:
+                filter.color = color
+                break
+
+    # UTILITY
     def get_name_from_path(self, path):
         filename = self.extract_name(path)
 

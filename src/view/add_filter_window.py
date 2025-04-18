@@ -9,8 +9,11 @@ class AddFilterDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.coord_inputs = {}
+        self.filter_name = ""
+        self.filter_bounds = ()
         self.filter_color = QColor("black")
+
+        self.coord_inputs = {}
 
         self.setWindowTitle("Add Filter")
 
@@ -116,8 +119,22 @@ class AddFilterDialog(QDialog):
             self.update_preview()
 
     def validate(self):
-        name_filled = self.name_edit.text().strip() != ""
+        name_filled = self.name_edit.text() != ""
         self.add_button.setEnabled(name_filled)
+
+    def accept(self):
+        self.filter_name = self.name_edit.text()
+        self.filter_bounds = (
+            self.coord_inputs["X min"].value(),
+            self.coord_inputs["X max"].value(),
+            self.coord_inputs["Y min"].value(),
+            self.coord_inputs["Y max"].value(),
+            self.coord_inputs["Z min"].value(),
+            self.coord_inputs["Z max"].value(),
+        )
+        self.filter_color = self.filter_color
+
+        super().accept()
 
     def update_preview(self):
         self.plotter_widget.clear()
@@ -133,4 +150,3 @@ class AddFilterDialog(QDialog):
         self.plotter_widget.add_mesh(
             box, style="wireframe", color=self.filter_color.name(), line_width=3
         )
-        self.plotter_widget.reset_camera()

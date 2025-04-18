@@ -55,6 +55,7 @@ class EditableLabel(QWidget):
         self.label.show()
         self.line_edit.hide()
 
+    @property
     def text(self):
         return self._full_text
 

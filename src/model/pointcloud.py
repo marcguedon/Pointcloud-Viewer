@@ -6,7 +6,6 @@ from pyvista import DataSet
 class Pointcloud:
     _name: str
     _points: DataSet
-    _visibility: bool = True
 
     @property
     def name(self) -> str:
@@ -15,14 +14,6 @@ class Pointcloud:
     @property
     def points(self) -> DataSet:
         return self._points
-
-    @property
-    def visibility(self) -> bool:
-        return self._visibility
-
-    @visibility.setter
-    def visibility(self, visibility: bool):
-        self._visibility = visibility
 
     @name.setter
     def name(self, name: str):
