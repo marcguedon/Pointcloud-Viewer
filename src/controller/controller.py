@@ -60,6 +60,9 @@ class Controller:
 
         return None
 
+    def get_pointclouds(self):
+        return self.pointclouds_list
+
     # FILTERS
     def add_filter(self, name, bounds, color):  # TODO Manage the name
         box = pv.Box(bounds=bounds)
@@ -101,7 +104,7 @@ class Controller:
                 box = pv.Box(bounds=bounds)
                 filter.box = box
                 return box
-        
+
         return None
 
     def set_filter_color(self, name, color):
@@ -109,6 +112,9 @@ class Controller:
             if filter.name == name:
                 filter.color = color
                 break
+
+    def get_filters(self):
+        return self.filters_list
 
     # UTILITY
     def get_name_from_path(self, path):

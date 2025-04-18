@@ -1,6 +1,7 @@
+import yaml
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCursor
+from PyQt5.QtGui import QCursor, QColor
 from view.add_filter_window import AddFilterDialog
 from view.pointcloud_menu import PointcloudMenu
 from view.filter_menu import FilterMenu
@@ -53,10 +54,25 @@ class ControlLayout(QVBoxLayout):
         add_filter_btn.clicked.connect(self.on_add_filter_button_clicked)
         filter_layout.addWidget(add_filter_btn)
 
+        filter_file_layout = QHBoxLayout()
+        filter_file_layout.setSpacing(5)
+        filter_layout.addLayout(filter_file_layout)
+
+        import_filter_btn = QPushButton("Import Filters")
+        import_filter_btn.setToolTip("Import filters")
+        import_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        import_filter_btn.clicked.connect(self.on_import_filter_button_clicked)
+        filter_file_layout.addWidget(import_filter_btn)
+
+        export_filter_btn = QPushButton("Export Filters")
+        export_filter_btn.setToolTip("Export filters")
+        export_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        export_filter_btn.clicked.connect(self.on_export_filter_button_clicked)
+        filter_file_layout.addWidget(export_filter_btn)
+
         self.filters_tree = QTreeWidget()
         self.filters_tree.setHeaderLabel("Filters")
         self.filters_tree.setIndentation(0)
-        # TODO Traviller sur le menu
         self.filters_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.filters_tree.customContextMenuRequested.connect(self.filter_menu)
         filter_layout.addWidget(self.filters_tree)
@@ -121,7 +137,7 @@ class ControlLayout(QVBoxLayout):
         return checkbox, label, delete_btn
 
     def on_add_filter_button_clicked(self):
-        add_filter_window = AddFilterDialog()
+        add_filter_window = AddFilterDialog("add")
         add_filter_window.setWindowTitle("Add Filter")
 
         result = add_filter_window.exec_()
@@ -142,8 +158,7 @@ class ControlLayout(QVBoxLayout):
 
         filter = self.controller.get_filter_by_name(name)
 
-        add_filter_window = AddFilterDialog()
-        add_filter_window.setWindowTitle("Edit Filter")
+        add_filter_window = AddFilterDialog("edit")
 
         add_filter_window.name_edit.setText(name)
         add_filter_window.coord_inputs["X min"].setValue(filter.box.bounds[0])
@@ -203,11 +218,72 @@ class ControlLayout(QVBoxLayout):
             menu.rename_filter.connect(
                 lambda item=item: self.main_window.trigger_filter_rename(item)
             )
-            menu.edit_filter.connect(
-                lambda item=item: self.edit_filter(item)
-            )
+            menu.edit_filter.connect(lambda item=item: self.edit_filter(item))
             menu.delete_filter.connect(
                 lambda item=item: self.main_window.on_remove_filter_item(item)
             )
 
             menu.exec_(self.filters_tree.viewport().mapToGlobal(position))
+
+    def on_export_filter_button_clicked(self):
+        filters = self.controller.get_filters()
+
+        if not filters:
+            self.main_window.info_label.setText("No filters to export")
+            self.main_window.info_label.setStyleSheet(
+                "QLabel#info_label {color: black}"
+            )
+            return
+
+        filters_dict = {
+            "filters": {
+                filter.name: {
+                    "bounds": [round(val, 2) for val in filter.box.bounds],
+                    "color": filter.color.name(),
+                }
+            }
+            for filter in filters
+        }
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.main_window,
+            "Export filters",
+            "",
+            "YAML files (*.yaml *.yml);;All files (*)",
+        )
+
+        if not file_path:
+            return
+
+        if not file_path.endswith((".yaml", ".yml")):
+            file_path += ".yaml"
+
+        with open(file_path, "w") as file:
+            yaml.dump(filters_dict, file)
+
+        self.main_window.info_label.setText("Filters exported successfully")
+        self.main_window.info_label.setStyleSheet("QLabel#info_label {color: green}")
+
+    def on_import_filter_button_clicked(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.main_window,
+            "Import filters",
+            "",
+            "YAML files (*.yaml *.yml);;All files (*)",
+        )
+
+        if not file_path:
+            return
+
+        with open(file_path, "r") as file:
+            filters_dict = yaml.safe_load(file)
+
+        for filter_name, filter_data in filters_dict["filters"].items():
+            bounds = filter_data["bounds"]
+            color = QColor(filter_data["color"])
+
+            filter_box = self.controller.add_filter(filter_name, bounds, color)
+            self.main_window.show_filter(filter_name, filter_box, color)
+
+        self.main_window.info_label.setText("Filters imported successfully")
+        self.main_window.info_label.setStyleSheet("QLabel#info_label {color: green}")

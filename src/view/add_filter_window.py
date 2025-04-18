@@ -6,8 +6,10 @@ from PyQt5.QtCore import Qt
 
 
 class AddFilterDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, mode):
+        super().__init__()
+
+        self.mode = mode
 
         self.filter_name = ""
         self.filter_bounds = ()
@@ -15,7 +17,10 @@ class AddFilterDialog(QDialog):
 
         self.coord_inputs = {}
 
-        self.setWindowTitle("Add Filter")
+        if self.mode == "add":
+            self.setWindowTitle("Add Filter")
+        elif self.mode == "edit":
+            self.setWindowTitle("Edit Filter")
 
         self.create_ui()
 
@@ -101,8 +106,12 @@ class AddFilterDialog(QDialog):
         cancel_button.clicked.connect(self.reject)
         buttons_layout.addWidget(cancel_button)
 
-        self.add_button = QPushButton("Add")
-        self.add_button.setToolTip("Add filter")
+        if self.mode == "add":
+            self.add_button = QPushButton("Add")
+            self.add_button.setToolTip("Add filter")
+        elif self.mode == "edit":
+            self.add_button = QPushButton("Accept")
+            self.add_button.setToolTip("Accept changes")
         self.add_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.add_button.clicked.connect(self.accept)
         self.add_button.setEnabled(False)

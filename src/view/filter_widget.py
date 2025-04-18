@@ -52,7 +52,7 @@ class FilterWidget(QWidget):
         layout.addWidget(self.edit_btn)
 
         self.delete_btn = QPushButton("X")
-        self.delete_btn.setToolTip("Delete pointcloud")
+        self.delete_btn.setToolTip("Delete filter")
         self.delete_btn.setFixedSize(20, 20)
         self.delete_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.delete_btn.clicked.connect(lambda state: self.delete_requested.emit())
