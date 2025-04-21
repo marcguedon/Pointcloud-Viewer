@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import *
-from view import viewer_layout
 from view.editable_label import EditableLabel
 from view.control_layout import ControlLayout
 from view.viewer_layout import ViewerLayout
@@ -45,7 +44,7 @@ class MainWindow(QMainWindow):
         menu_bar = QMenuBar()
         self.setMenuBar(menu_bar)
 
-        file_menu = menu_bar.addMenu("&File")
+        file_menu = menu_bar.addMenu("&Data")
         file_menu.addAction(
             "Load pointcloud", self.control_layout.on_load_pointcloud_button_clicked
         )
@@ -59,6 +58,7 @@ class MainWindow(QMainWindow):
 
         view_menu = menu_bar.addMenu("&View")
         view_menu.addAction("Change theme", self.viewer_layout.change_theme)
+        view_menu.addAction("Show/hide axes", self.viewer_layout.show_hide_axes)
 
     def add_pointcloud(self, name):
         name, pointcloud_data = self.controller.load_pointcloud(name)
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
 
         self.control_layout.add_pointcloud(item, pointcloud_widget)
 
-        self.viewer_layout.display_pointcloud(name, pointcloud_data)
+        self.viewer_layout.add_pointcloud(name, pointcloud_data)
 
         self.info_label.setText(
             f"Pointcloud loaded: {name} ({pointcloud_data.n_points} points)"
@@ -91,10 +91,10 @@ class MainWindow(QMainWindow):
 
         if checkbox.isChecked():
             pointcloud_data = self.controller.get_pointcloud_by_name(name).points
-            self.viewer_layout.display_pointcloud(name, pointcloud_data)
+            self.viewer_layout.add_pointcloud(name, pointcloud_data)
             self.info_label.setText(f"Toggle pointcloud visibility: shown ({name})")
         else:
-            self.viewer_layout.hide_pointcloud(name)
+            self.viewer_layout.delete_pointcloud(name)
             self.info_label.setText(f"Toggle pointcloud visibility: hidden ({name})")
 
         self.info_label.setStyleSheet("QLabel#info_label {color: black}")
@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
             is_available = self.controller.is_pointcloud_name_available(new_name)
 
             if is_available:
-                self.viewer_layout.change_actor_name(name, new_name)
+                self.viewer_layout.change_pointcloud_name(name, new_name)
                 self.controller.rename_pointcloud(name, new_name)
                 label.apply_validated_text(new_name)
                 label.setToolTip(new_name)
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
 
         self.control_layout.remove_pointcloud(item)
 
-        self.viewer_layout.hide_pointcloud(name)
+        self.viewer_layout.delete_pointcloud(name)
 
         self.controller.delete_pointcloud(name)
         self.info_label.setText(f"Pointcloud removed: {name}")
@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
         item = QTreeWidgetItem()
         self.control_layout.add_filter(item, filter_widget)
 
-        self.viewer_layout.display_filter(name, box, color.name())
+        self.viewer_layout.add_filter(name, box, color.name())
 
         self.info_label.setText(f"Filter added: {name}")
         self.info_label.setStyleSheet("QLabel#info_label {color: green}")
@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
 
         self.control_layout.remove_filter(item)
 
-        self.viewer_layout.hide_filter(name)
+        self.viewer_layout.delete_filter(name)
 
         self.controller.delete_filter(name)
         self.info_label.setText(f"Filter removed: {name}")
@@ -189,10 +189,10 @@ class MainWindow(QMainWindow):
 
         if checkbox.isChecked():
             filter = self.controller.get_filter_by_name(name)
-            self.viewer_layout.display_filter(name, filter.box, filter.color.name())
+            self.viewer_layout.add_filter(name, filter.box, filter.color.name())
             self.info_label.setText(f"Toggle filter visibility: shown ({name})")
         else:
-            self.viewer_layout.hide_filter(name)
+            self.viewer_layout.delete_filter(name)
             self.info_label.setText(f"Toggle filter visibility: hidden ({name})")
 
         self.info_label.setStyleSheet("QLabel#info_label {color: black}")
@@ -203,9 +203,9 @@ class MainWindow(QMainWindow):
         checkbox.setChecked(not checkbox.isChecked())
 
     def update_filter(self, old_name, new_name, box, color):
-        self.viewer_layout.hide_filter(old_name)
+        self.viewer_layout.delete_filter(old_name)
 
-        self.viewer_layout.display_filter(new_name, box, color.name())
+        self.viewer_layout.add_filter(new_name, box, color.name())
 
         self.info_label.setText(f"Filter edited: {old_name} -> {new_name}")
         self.info_label.setStyleSheet("QLabel#info_label {color: green}")
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
             is_available = self.controller.is_filter_name_available(new_name)
 
             if is_available:
-                self.viewer_layout.change_actor_name(name, new_name)
+                self.viewer_layout.change_filter_name(name, new_name)
                 self.controller.rename_filter(name, new_name)
                 label.apply_validated_text(new_name)
                 label.setToolTip(new_name)
