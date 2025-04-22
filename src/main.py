@@ -1,5 +1,7 @@
 import sys
 import os
+import matplotlib
+matplotlib.use("Agg")
 from view.main_window import MainWindow
 from PyQt5.QtWidgets import QApplication
 

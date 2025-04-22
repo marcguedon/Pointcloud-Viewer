@@ -120,7 +120,7 @@ class ViewerLayout(QVBoxLayout):
             nb_points = arrow.n_points
             colors = np.tile(np.array(color), (nb_points, 1))
             arrow["colors"] = colors
-            
+
             return arrow
 
         x_arrow = make_arrow((1, 0, 0), (255, 0, 0))
