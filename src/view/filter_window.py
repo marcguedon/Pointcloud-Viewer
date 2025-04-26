@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QColor, QCursor
 from PyQt5.QtCore import Qt
 
-
-class AddFilterDialog(QDialog):
+# TODO: Change it to a real time filter window
+class FilterDialog(QDialog):
     def __init__(self, mode):
         super().__init__()
 
@@ -45,6 +45,7 @@ class AddFilterDialog(QDialog):
         name_layout.addWidget(name_label)
 
         self.name_edit = QLineEdit()
+        self.name_edit.setToolTip("Enter filter name")
         self.name_edit.setPlaceholderText("Enter filter name")
         self.name_edit.textChanged.connect(self.validate)
         name_layout.addWidget(self.name_edit)
@@ -52,6 +53,7 @@ class AddFilterDialog(QDialog):
         # Filter coordinates
         for label in ["X min", "X max", "Y min", "Y max", "Z min", "Z max"]:
             spin = QDoubleSpinBox()
+            spin.setToolTip(f"Enter {label.lower()} coordinate")
             spin.setRange(-1000, 1000)
             spin.setDecimals(2)
             spin.setSingleStep(0.1)
@@ -79,12 +81,20 @@ class AddFilterDialog(QDialog):
         color_layout.addWidget(color_label)
 
         self.color_button = QPushButton()
-        # TODO Problème: Tooltip takes the color background of the button
-        # self.color_button.setToolTip("Choose filter color")
+        self.color_button.setToolTip("Choose filter color")
         self.color_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.color_button.setFixedSize(40, 20)
         self.color_button.setStyleSheet(
-            f"background-color: {self.filter_color.name()};"
+            f"""
+                QPushButton {{
+                    background-color: {self.filter_color.name()};
+                }}
+                QToolTip {{
+                    background-color: #ffffdc;
+                    color: black;
+                    border: 1px solid black;
+                }}
+            """
         )
         self.color_button.clicked.connect(self.choose_color)
         color_layout.addWidget(self.color_button)
@@ -109,9 +119,12 @@ class AddFilterDialog(QDialog):
         if self.mode == "add":
             self.add_button = QPushButton("Add")
             self.add_button.setToolTip("Add filter")
+
         elif self.mode == "edit":
             self.add_button = QPushButton("Accept")
             self.add_button.setToolTip("Accept changes")
+
+        self.add_button.setDefault(True)
         self.add_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.add_button.clicked.connect(self.accept)
         self.add_button.setEnabled(False)

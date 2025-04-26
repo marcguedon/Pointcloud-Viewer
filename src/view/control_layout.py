@@ -1,8 +1,9 @@
 import yaml
+import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor, QColor
-from view.add_filter_window import AddFilterDialog
+from view.filter_window import FilterDialog
 from view.pointcloud_menu import PointcloudMenu
 from view.filter_menu import FilterMenu
 from controller.controller import Controller
@@ -87,7 +88,10 @@ class ControlLayout(QVBoxLayout):
     def pointcloud_menu(self, position):
         item = self.pointclouds_tree.itemAt(position)
 
-        if item is not None:
+        if item is None:
+            raise ValueError("Item is None")
+
+        else:
             menu = PointcloudMenu()
 
             menu.toggle_pointcloud_visibility.connect(
@@ -104,13 +108,25 @@ class ControlLayout(QVBoxLayout):
 
     def on_load_pointcloud_button_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self.main_window,
-            "Load pointcloud",
-            "",
-            "Pointcloud file (*.ply *.pcd *.xyz)",
+            parent=self.main_window,
+            caption="Load pointcloud",
+            directory="",
+            filter="Pointcloud file (*.ply *.pcd *.xyz);;All files (*)",
         )
 
         if not file_path:
+            self.main_window.info_label.setText("No file selected")
+            self.main_window.info_label.setStyleSheet(
+                "QLabel#info_label {color: black}"
+            )
+            return
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        if not file_path.endswith((".ply", ".pcd", ".xyz")):
+            self.main_window.info_label.setText("Invalid file format")
+            self.main_window.info_label.setStyleSheet("QLabel#info_label {color: red}")
             return
 
         self.main_window.add_pointcloud(file_path)
@@ -128,7 +144,8 @@ class ControlLayout(QVBoxLayout):
         row_widget = self.pointclouds_tree.itemWidget(item, 0)
 
         if row_widget is None:
-            return None, None
+            # return None, None, None
+            raise ValueError("Row widget is None")
 
         checkbox = row_widget.checkbox
         label = row_widget.label
@@ -137,15 +154,15 @@ class ControlLayout(QVBoxLayout):
         return checkbox, label, delete_btn
 
     def on_add_filter_button_clicked(self):
-        add_filter_window = AddFilterDialog("add")
-        add_filter_window.setWindowTitle("Add Filter")
+        filter_window = FilterDialog("add")
+        filter_window.setWindowTitle("Add Filter")
 
-        result = add_filter_window.exec_()
+        result = filter_window.exec_()
 
         if result == QDialog.Accepted:
-            filter_name = add_filter_window.filter_name
-            filter_bounds = add_filter_window.filter_bounds
-            filter_color = add_filter_window.filter_color
+            filter_name = filter_window.filter_name
+            filter_bounds = filter_window.filter_bounds
+            filter_color = filter_window.filter_color
 
             filter_box = self.controller.add_filter(
                 filter_name, filter_bounds, filter_color
@@ -158,25 +175,25 @@ class ControlLayout(QVBoxLayout):
 
         filter = self.controller.get_filter_by_name(name)
 
-        add_filter_window = AddFilterDialog("edit")
+        filter_window = FilterDialog("edit")
 
-        add_filter_window.name_edit.setText(name)
-        add_filter_window.coord_inputs["X min"].setValue(filter.box.bounds[0])
-        add_filter_window.coord_inputs["X max"].setValue(filter.box.bounds[1])
-        add_filter_window.coord_inputs["Y min"].setValue(filter.box.bounds[2])
-        add_filter_window.coord_inputs["Y max"].setValue(filter.box.bounds[3])
-        add_filter_window.coord_inputs["Z min"].setValue(filter.box.bounds[4])
-        add_filter_window.coord_inputs["Z max"].setValue(filter.box.bounds[5])
-        add_filter_window.color_button.setStyleSheet(
+        filter_window.name_edit.setText(name)
+        filter_window.coord_inputs["X min"].setValue(filter.box.bounds[0])
+        filter_window.coord_inputs["X max"].setValue(filter.box.bounds[1])
+        filter_window.coord_inputs["Y min"].setValue(filter.box.bounds[2])
+        filter_window.coord_inputs["Y max"].setValue(filter.box.bounds[3])
+        filter_window.coord_inputs["Z min"].setValue(filter.box.bounds[4])
+        filter_window.coord_inputs["Z max"].setValue(filter.box.bounds[5])
+        filter_window.color_button.setStyleSheet(
             f"background-color: {filter.color.name()};"
         )
 
-        result = add_filter_window.exec_()
+        result = filter_window.exec_()
 
         if result == QDialog.Accepted:
-            filter_name = add_filter_window.filter_name
-            filter_bounds = add_filter_window.filter_bounds
-            filter_color = add_filter_window.filter_color
+            filter_name = filter_window.filter_name
+            filter_bounds = filter_window.filter_bounds
+            filter_color = filter_window.filter_color
 
             label.apply_validated_text(filter_name)
             label.setToolTip(filter_name)
@@ -197,7 +214,8 @@ class ControlLayout(QVBoxLayout):
     def get_filter_widgets_from_item(self, item):
         row_widget = self.filters_tree.itemWidget(item, 0)
         if row_widget is None:
-            return None, None
+            # return None, None, None, None
+            raise ValueError("Row widget is None")
 
         checkbox = row_widget.checkbox
         label = row_widget.label
@@ -209,7 +227,10 @@ class ControlLayout(QVBoxLayout):
     def filter_menu(self, position):
         item = self.filters_tree.itemAt(position)
 
-        if item is not None:
+        if item is None:
+            raise ValueError("Item is None")
+
+        else:
             menu = FilterMenu()
 
             menu.toggle_filter_visibility.connect(
@@ -225,54 +246,27 @@ class ControlLayout(QVBoxLayout):
 
             menu.exec_(self.filters_tree.viewport().mapToGlobal(position))
 
-    def on_export_filter_button_clicked(self):
-        filters = self.controller.get_filters()
+    def on_import_filter_button_clicked(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            parent=self.main_window,
+            caption="Import filters",
+            directory="",
+            filters="YAML files (*.yaml *.yml);;All files (*)",
+        )
 
-        if not filters:
-            self.main_window.info_label.setText("No filters to export")
+        if not file_path:
+            self.main_window.info_label.setText("No file selected")
             self.main_window.info_label.setStyleSheet(
                 "QLabel#info_label {color: black}"
             )
             return
 
-        filters_dict = {
-            "filters": {
-                filter.name: {
-                    "bounds": [round(val, 2) for val in filter.box.bounds],
-                    "color": filter.color.name(),
-                }
-            }
-            for filter in filters
-        }
-
-        file_path, _ = QFileDialog.getSaveFileName(
-            self.main_window,
-            "Export filters",
-            "",
-            "YAML files (*.yaml *.yml);;All files (*)",
-        )
-
-        if not file_path:
-            return
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         if not file_path.endswith((".yaml", ".yml")):
-            file_path += ".yaml"
-
-        with open(file_path, "w") as file:
-            yaml.dump(filters_dict, file)
-
-        self.main_window.info_label.setText("Filters exported successfully")
-        self.main_window.info_label.setStyleSheet("QLabel#info_label {color: green}")
-
-    def on_import_filter_button_clicked(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self.main_window,
-            "Import filters",
-            "",
-            "YAML files (*.yaml *.yml);;All files (*)",
-        )
-
-        if not file_path:
+            self.main_window.info_label.setText("Invalid file format")
+            self.main_window.info_label.setStyleSheet("QLabel#info_label {color: red}")
             return
 
         with open(file_path, "r") as file:
@@ -287,3 +281,64 @@ class ControlLayout(QVBoxLayout):
 
         self.main_window.info_label.setText("Filters imported successfully")
         self.main_window.info_label.setStyleSheet("QLabel#info_label {color: green}")
+
+    def on_export_filter_button_clicked(self):
+        filters = self.controller.get_filters()
+
+        if not filters:
+            self.main_window.info_label.setText("No filters to export")
+            self.main_window.info_label.setStyleSheet(
+                "QLabel#info_label {color: black}"
+            )
+            return
+
+        dialog = QFileDialog(self.main_window, "Export filters")
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+        dialog.setNameFilters(["YAML files (*.yaml *.yml)", "All files (*)"])
+        # dialog.setDefaultSuffix("yaml") # Automatically adds .yaml extension
+        dialog.setOption(QFileDialog.DontConfirmOverwrite, True)
+
+        def correct_extension_on_click(path):
+            if path and not path.endswith((".yaml", ".yml")):
+                corrected = path + ".yaml"
+                dialog.selectFile(corrected)
+
+        dialog.currentChanged.connect(correct_extension_on_click)
+
+        if dialog.exec_() == QFileDialog.Accepted:
+            file_path = dialog.selectedFiles()[0]
+
+            if os.path.exists(file_path):
+                reply = QMessageBox.question(
+                    self.main_window,
+                    "File exists",
+                    f"The file {os.path.basename(file_path)} already exists.<br>Do you want to overwrite it?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
+                )
+                if reply != QMessageBox.Yes:
+                    self.main_window.info_label.setText("Export cancelled")
+                    self.main_window.info_label.setStyleSheet(
+                        "QLabel#info_label {color: black}"
+                    )
+                    return
+
+            filters_dict = {
+                "filters": {
+                    filter.name: {
+                        "bounds": [round(val, 2) for val in filter.box.bounds],
+                        "color": filter.color.name(),
+                    }
+                    for filter in filters
+                }
+            }
+
+            with open(file_path, "w") as file:
+                yaml.dump(filters_dict, file)
+
+            self.main_window.info_label.setText(
+                f"Filters exported successfully: {os.path.basename(file_path)}"
+            )
+            self.main_window.info_label.setStyleSheet(
+                "QLabel#info_label {color: green}"
+            )
