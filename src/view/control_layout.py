@@ -1,3 +1,4 @@
+from sympy import Q
 import yaml
 import os
 from PyQt5.QtWidgets import *
@@ -154,20 +155,14 @@ class ControlLayout(QVBoxLayout):
         return checkbox, label, delete_btn
 
     def on_add_filter_button_clicked(self):
-        filter_window = FilterDialog("add")
-        filter_window.setWindowTitle("Add Filter")
+        filter_name = "test" # TODO: Manage the name with the controller
+        filter_bounds = (0.0, 1.0, 0.0, 1.0, 0.0, 1.0)  # Default bounds
+        filter_color = QColor("black")
 
-        result = filter_window.exec_()
-
-        if result == QDialog.Accepted:
-            filter_name = filter_window.filter_name
-            filter_bounds = filter_window.filter_bounds
-            filter_color = filter_window.filter_color
-
-            filter_box = self.controller.add_filter(
-                filter_name, filter_bounds, filter_color
-            )
-            self.main_window.show_filter(filter_name, filter_box, filter_color)
+        filter_box = self.controller.add_filter(
+            filter_name, filter_bounds, filter_color
+        )
+        self.main_window.show_filter(filter_name, filter_box, filter_color)
 
     def edit_filter(self, item):
         _, label, _, _ = self.get_filter_widgets_from_item(item)
@@ -175,34 +170,14 @@ class ControlLayout(QVBoxLayout):
 
         filter = self.controller.get_filter_by_name(name)
 
-        filter_window = FilterDialog("edit")
+        self.main_window.viewer_area.show_filter_dialog(filter)
+        # filter_window = FilterDialog()
 
-        filter_window.name_edit.setText(name)
-        filter_window.coord_inputs["X min"].setValue(filter.box.bounds[0])
-        filter_window.coord_inputs["X max"].setValue(filter.box.bounds[1])
-        filter_window.coord_inputs["Y min"].setValue(filter.box.bounds[2])
-        filter_window.coord_inputs["Y max"].setValue(filter.box.bounds[3])
-        filter_window.coord_inputs["Z min"].setValue(filter.box.bounds[4])
-        filter_window.coord_inputs["Z max"].setValue(filter.box.bounds[5])
-        filter_window.color_button.setStyleSheet(
-            f"background-color: {filter.color.name()};"
-        )
+        # filter_bounds = filter_window.filter_bounds
+        # filter_color = filter_window.filter_color
 
-        result = filter_window.exec_()
-
-        if result == QDialog.Accepted:
-            filter_name = filter_window.filter_name
-            filter_bounds = filter_window.filter_bounds
-            filter_color = filter_window.filter_color
-
-            label.apply_validated_text(filter_name)
-            label.setToolTip(filter_name)
-
-            self.controller.set_filter_name(name, filter_name)
-            box = self.controller.set_filter_bounds(filter_name, filter_bounds)
-            self.controller.set_filter_color(filter_name, filter_color)
-
-            self.main_window.update_filter(name, filter_name, box, filter_color)
+        # box = self.controller.set_filter_bounds(name, filter_bounds)
+        # self.controller.set_filter_color(name, filter_color)
 
     def add_filter(self, item, filter_widget):
         self.filters_tree.addTopLevelItem(item)
@@ -213,8 +188,8 @@ class ControlLayout(QVBoxLayout):
 
     def get_filter_widgets_from_item(self, item):
         row_widget = self.filters_tree.itemWidget(item, 0)
+        
         if row_widget is None:
-            # return None, None, None, None
             raise ValueError("Row widget is None")
 
         checkbox = row_widget.checkbox

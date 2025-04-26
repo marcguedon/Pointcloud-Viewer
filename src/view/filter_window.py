@@ -1,70 +1,66 @@
-import pyvista as pv
-from pyvistaqt import QtInteractor
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QColor, QCursor
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import Qt, QEvent
+from model.filter import Filter
+from controller.controller import Controller
 
-# TODO: Change it to a real time filter window
-class FilterDialog(QDialog):
-    def __init__(self, mode):
+
+# TODO: Manage filter name change
+class FilterDialog(QMdiSubWindow):
+    def __init__(self, parent, filter: Filter):
         super().__init__()
 
-        self.mode = mode
+        self.parent = parent
+        self.controller = Controller()
 
-        self.filter_name = ""
-        self.filter_bounds = ()
-        self.filter_color = QColor("black")
+        self.is_collapsed = False
+        self.title_bar_height = self.style().pixelMetric(QStyle.PM_TitleBarHeight)
+
+        self.filter_name = filter.name
+        self.filter_bounds = filter.box.bounds
+        self.filter_color = filter.color
 
         self.coord_inputs = {}
 
-        if self.mode == "add":
-            self.setWindowTitle("Add Filter")
-        elif self.mode == "edit":
-            self.setWindowTitle("Edit Filter")
+        self.setWindowTitle("Edit Filter")
+        self.setWindowFlags(
+            Qt.WindowCloseButtonHint
+            | Qt.WindowMinimizeButtonHint
+            | Qt.WindowStaysOnTopHint  # TODO: To remove from title bar menu
+            | Qt.MSWindowsFixedSizeDialogHint
+        )
 
+        self.normal_size = None
         self.create_ui()
 
+        # self.is_dragging = False
+        # self.drag_start_pos = None
+
     def create_ui(self):
+        main_widget = QWidget()
+        self.setWidget(main_widget)
+
         main_layout = QVBoxLayout()
-        self.setLayout(main_layout)
+        main_widget.setLayout(main_layout)
 
         parameters_layout = QHBoxLayout()
         main_layout.addLayout(parameters_layout)
 
         left_layout = QVBoxLayout()
-        left_layout.setContentsMargins(5, 20, 20, 20)
         left_layout.setSpacing(10)
         parameters_layout.addLayout(left_layout)
 
-        # Filter name
-        name_layout = QVBoxLayout()
-        name_layout.setSpacing(0)
-        left_layout.addLayout(name_layout)
-
-        name_label = QLabel("Filter Name:")
-        name_layout.addWidget(name_label)
-
-        self.name_edit = QLineEdit()
-        self.name_edit.setToolTip("Enter filter name")
-        self.name_edit.setPlaceholderText("Enter filter name")
-        self.name_edit.textChanged.connect(self.validate)
-        name_layout.addWidget(self.name_edit)
-
         # Filter coordinates
-        for label in ["X min", "X max", "Y min", "Y max", "Z min", "Z max"]:
+        for label, value in zip(
+            ["X min", "X max", "Y min", "Y max", "Z min", "Z max"], self.filter_bounds
+        ):
             spin = QDoubleSpinBox()
             spin.setToolTip(f"Enter {label.lower()} coordinate")
             spin.setRange(-1000, 1000)
             spin.setDecimals(2)
             spin.setSingleStep(0.1)
-
-            if "min" in label:
-                spin.setValue(0.0)
-
-            else:
-                spin.setValue(1.0)
-
-            spin.valueChanged.connect(self.update_preview)
+            spin.setValue(value)
+            spin.valueChanged.connect(self.update_viewer)
             self.coord_inputs[label] = spin
             layout = QVBoxLayout()
             layout.setSpacing(0)
@@ -74,7 +70,7 @@ class FilterDialog(QDialog):
 
         # Filter color
         color_layout = QHBoxLayout()
-        color_layout.setSpacing(0)
+        color_layout.setSpacing(5)
         left_layout.addLayout(color_layout)
 
         color_label = QLabel("Filter Color:")
@@ -99,36 +95,7 @@ class FilterDialog(QDialog):
         self.color_button.clicked.connect(self.choose_color)
         color_layout.addWidget(self.color_button)
 
-        # Display filter
-        self.plotter_widget = QtInteractor(self)
-        parameters_layout.addWidget(self.plotter_widget)
-        self.update_preview()
-
-        # Cancel/Add buttons
-        buttons_layout = QHBoxLayout()
-        buttons_layout.setContentsMargins(30, 30, 30, 30)
-        buttons_layout.setSpacing(50)
-        main_layout.addLayout(buttons_layout)
-
-        cancel_button = QPushButton("Cancel")
-        cancel_button.setToolTip("Cancel")
-        cancel_button.setCursor(QCursor(Qt.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-        buttons_layout.addWidget(cancel_button)
-
-        if self.mode == "add":
-            self.add_button = QPushButton("Add")
-            self.add_button.setToolTip("Add filter")
-
-        elif self.mode == "edit":
-            self.add_button = QPushButton("Accept")
-            self.add_button.setToolTip("Accept changes")
-
-        self.add_button.setDefault(True)
-        self.add_button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.add_button.clicked.connect(self.accept)
-        self.add_button.setEnabled(False)
-        buttons_layout.addWidget(self.add_button)
+        self.normal_size = self.sizeHint()
 
     def choose_color(self):
         color = QColorDialog.getColor(initial=self.filter_color, parent=self)
@@ -136,39 +103,126 @@ class FilterDialog(QDialog):
         if color.isValid():
             self.filter_color = color
             self.color_button.setStyleSheet(
-                f"background-color: {self.filter_color.name()};"
+                f"""
+                    QPushButton {{
+                        background-color: {self.filter_color.name()};
+                    }}
+                    QToolTip {{
+                        background-color: #ffffdc;
+                        color: black;
+                        border: 1px solid black;
+                    }}
+                """
             )
-            self.update_preview()
 
-    def validate(self):
-        name_filled = self.name_edit.text() != ""
-        self.add_button.setEnabled(name_filled)
+            self.update_viewer()
 
-    def accept(self):
-        self.filter_name = self.name_edit.text()
-        self.filter_bounds = (
-            self.coord_inputs["X min"].value(),
-            self.coord_inputs["X max"].value(),
-            self.coord_inputs["Y min"].value(),
-            self.coord_inputs["Y max"].value(),
-            self.coord_inputs["Z min"].value(),
-            self.coord_inputs["Z max"].value(),
+    def update_viewer(self):
+        self.controller.set_filter_bounds(
+            self.filter_name,
+            (
+                self.coord_inputs["X min"].value(),
+                self.coord_inputs["X max"].value(),
+                self.coord_inputs["Y min"].value(),
+                self.coord_inputs["Y max"].value(),
+                self.coord_inputs["Z min"].value(),
+                self.coord_inputs["Z max"].value(),
+            ),
         )
-        self.filter_color = self.filter_color
-
-        super().accept()
-
-    def update_preview(self):
-        self.plotter_widget.clear()
-        bounds = (
-            self.coord_inputs["X min"].value(),
-            self.coord_inputs["X max"].value(),
-            self.coord_inputs["Y min"].value(),
-            self.coord_inputs["Y max"].value(),
-            self.coord_inputs["Z min"].value(),
-            self.coord_inputs["Z max"].value(),
+        self.controller.set_filter_color(self.filter_name, self.filter_color)
+        self.parent.delete_filter(self.filter_name)
+        self.parent.add_filter(
+            self.filter_name,
+            self.controller.get_filter_by_name(self.filter_name).box,
+            self.filter_color.name(),
         )
-        box = pv.Box(bounds=bounds)
-        self.plotter_widget.add_mesh(
-            box, style="wireframe", color=self.filter_color.name(), line_width=3
-        )
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.windowState():
+                self.handle_minimize()
+
+        event.accept()
+
+    def handle_minimize(self):
+        self.is_collapsed = not self.is_collapsed
+        self.showNormal()
+
+        if self.is_collapsed:
+            self.setWindowFlags(
+                Qt.WindowCloseButtonHint
+                | Qt.WindowMaximizeButtonHint
+                | Qt.WindowStaysOnTopHint
+                | Qt.MSWindowsFixedSizeDialogHint
+            )
+            self.resize(self.width(), self.title_bar_height)
+
+        else:
+            self.setWindowFlags(
+                Qt.WindowCloseButtonHint
+                | Qt.WindowMinimizeButtonHint
+                | Qt.WindowStaysOnTopHint
+                | Qt.MSWindowsFixedSizeDialogHint
+            )
+            self.resize(
+                self.width(), self.normal_size.height()
+            )  # TODO: height doesn't work as expected
+
+    def mouseDoubleClickEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.handle_minimize()
+
+        event.accept()
+
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         self.is_dragging = True
+    #         self.drag_start_pos = event.globalPos()  # Position initiale de la souris
+
+    #     event.accept()
+
+    # def mouseMoveEvent(self, event):
+    #     if self.is_dragging:
+    #         # Déplacer la fenêtre sans changer l'état de la taille
+    #         delta = event.globalPos() - self.drag_start_pos
+    #         self.move(self.pos() + delta)
+    #         self.drag_start_pos = (
+    #             event.globalPos()
+    #         )  # Mettre à jour la position de départ
+
+    #     event.accept()
+
+    # def mouseReleaseEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         self.is_dragging = False
+
+    #     event.accept()
+
+    # def closeEvent(self, event):
+    #     """ Gestion de la fermeture de la fenêtre (clique sur le bouton Close) """
+    #     # Tu peux faire des actions supplémentaires ici avant de fermer la fenêtre si nécessaire
+    #     self.setWindowFlags(
+    #         Qt.WindowCloseButtonHint
+    #         | Qt.WindowMinimizeButtonHint
+    #         | Qt.WindowStaysOnTopHint
+    #         | Qt.MSWindowsFixedSizeDialogHint
+    #     )
+    #     event.accept()
+
+    # def showMinimized(self):
+    #     """ Quand on appuie sur le bouton Minimize """
+    #     self.is_collapsed = True
+    #     self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
+    #     self.resize(self.width(), self.title_bar_height)
+    #     super().showMinimized()
+
+    # def showNormal(self):
+    #     """ Quand on appuie sur le bouton Restore ou Maximize """
+    #     self.is_collapsed = False
+    #     self.setWindowFlags(
+    #         Qt.WindowCloseButtonHint
+    #         | Qt.WindowMinimizeButtonHint
+    #         | Qt.WindowStaysOnTopHint
+    #         | Qt.MSWindowsFixedSizeDialogHint
+    #     )
+    #     super().showNormal()

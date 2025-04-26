@@ -17,6 +17,8 @@ class ViewerLayout(QVBoxLayout):
         self.create_ui()
 
     def create_ui(self):
+        self.setContentsMargins(0, 0, 0, 0)
+
         self.plotter = QtInteractor()
         self.plotter.set_background("white")
         self.plotter.add_axes()
