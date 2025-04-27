@@ -1,24 +1,21 @@
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtGui import QCursor, QColor
+from PyQt5.QtCore import Qt
 from model.filter import Filter
 from controller.controller import Controller
 
 
-# TODO: Manage filter name change
 class FilterDialog(QMdiSubWindow):
-    def __init__(self, parent, filter: Filter):
+    def __init__(self, filter: Filter):
         super().__init__()
 
-        self.parent = parent
         self.controller = Controller()
 
+        self.is_changing_filter = False
         self.is_collapsed = False
         self.title_bar_height = self.style().pixelMetric(QStyle.PM_TitleBarHeight)
 
-        self.filter_name = filter.name
-        self.filter_bounds = filter.box.bounds
-        self.filter_color = filter.color
+        self.current_filter = filter
 
         self.coord_inputs = {}
 
@@ -52,7 +49,8 @@ class FilterDialog(QMdiSubWindow):
 
         # Filter coordinates
         for label, value in zip(
-            ["X min", "X max", "Y min", "Y max", "Z min", "Z max"], self.filter_bounds
+            ["X min", "X max", "Y min", "Y max", "Z min", "Z max"],
+            self.current_filter.box.bounds,
         ):
             spin = QDoubleSpinBox()
             spin.setToolTip(f"Enter {label.lower()} coordinate")
@@ -62,6 +60,7 @@ class FilterDialog(QMdiSubWindow):
             spin.setValue(value)
             spin.valueChanged.connect(self.update_viewer)
             self.coord_inputs[label] = spin
+
             layout = QVBoxLayout()
             layout.setSpacing(0)
             layout.addWidget(QLabel(label))
@@ -83,7 +82,7 @@ class FilterDialog(QMdiSubWindow):
         self.color_button.setStyleSheet(
             f"""
                 QPushButton {{
-                    background-color: {self.filter_color.name()};
+                    background-color: {self.current_filter.color};
                 }}
                 QToolTip {{
                     background-color: #ffffdc;
@@ -92,20 +91,49 @@ class FilterDialog(QMdiSubWindow):
                 }}
             """
         )
-        self.color_button.clicked.connect(self.choose_color)
+        self.color_button.clicked.connect(self.change_filter_color)
         color_layout.addWidget(self.color_button)
 
         self.normal_size = self.sizeHint()
 
-    def choose_color(self):
-        color = QColorDialog.getColor(initial=self.filter_color, parent=self)
+    def change_current_filter(self, filter: Filter):
+        self.current_filter = filter
+
+        self.is_changing_filter = True
+
+        for label, value in zip(
+            ["X min", "X max", "Y min", "Y max", "Z min", "Z max"],
+            self.current_filter.box.bounds,
+        ):
+            self.coord_inputs[label].setValue(value)
+
+        self.is_changing_filter = False
+
+        self.color_button.setStyleSheet(
+            f"""
+                QPushButton {{
+                    background-color: {self.current_filter.color};
+                }}
+                QToolTip {{
+                    background-color:
+                        #ffffdc;
+                    color: black;
+                    border: 1px solid black;
+                }}
+            """
+        )
+
+    def change_filter_color(self):
+        color = QColorDialog.getColor(
+            initial=QColor(self.current_filter.color), parent=self
+        )
 
         if color.isValid():
-            self.filter_color = color
+            self.controller.set_filter_color(self.current_filter, color.name())
             self.color_button.setStyleSheet(
                 f"""
                     QPushButton {{
-                        background-color: {self.filter_color.name()};
+                        background-color: {self.current_filter.color};
                     }}
                     QToolTip {{
                         background-color: #ffffdc;
@@ -118,8 +146,11 @@ class FilterDialog(QMdiSubWindow):
             self.update_viewer()
 
     def update_viewer(self):
+        if self.is_changing_filter:
+            return
+
         self.controller.set_filter_bounds(
-            self.filter_name,
+            self.current_filter,
             (
                 self.coord_inputs["X min"].value(),
                 self.coord_inputs["X max"].value(),
@@ -129,50 +160,43 @@ class FilterDialog(QMdiSubWindow):
                 self.coord_inputs["Z max"].value(),
             ),
         )
-        self.controller.set_filter_color(self.filter_name, self.filter_color)
-        self.parent.delete_filter(self.filter_name)
-        self.parent.add_filter(
-            self.filter_name,
-            self.controller.get_filter_by_name(self.filter_name).box,
-            self.filter_color.name(),
-        )
 
-    def changeEvent(self, event):
-        if event.type() == QEvent.WindowStateChange:
-            if self.windowState():
-                self.handle_minimize()
+    # def changeEvent(self, event):
+    #     if event.type() == QEvent.WindowStateChange:
+    #         if self.windowState():
+    #             self.handle_minimize()
 
-        event.accept()
+    #     event.accept()
 
-    def handle_minimize(self):
-        self.is_collapsed = not self.is_collapsed
-        self.showNormal()
+    # def handle_minimize(self):
+    #     self.is_collapsed = not self.is_collapsed
+    #     self.showNormal()
 
-        if self.is_collapsed:
-            self.setWindowFlags(
-                Qt.WindowCloseButtonHint
-                | Qt.WindowMaximizeButtonHint
-                | Qt.WindowStaysOnTopHint
-                | Qt.MSWindowsFixedSizeDialogHint
-            )
-            self.resize(self.width(), self.title_bar_height)
+    #     if self.is_collapsed:
+    #         self.setWindowFlags(
+    #             Qt.WindowCloseButtonHint
+    #             | Qt.WindowMaximizeButtonHint
+    #             | Qt.WindowStaysOnTopHint
+    #             | Qt.MSWindowsFixedSizeDialogHint
+    #         )
+    #         self.resize(self.width(), self.title_bar_height)
 
-        else:
-            self.setWindowFlags(
-                Qt.WindowCloseButtonHint
-                | Qt.WindowMinimizeButtonHint
-                | Qt.WindowStaysOnTopHint
-                | Qt.MSWindowsFixedSizeDialogHint
-            )
-            self.resize(
-                self.width(), self.normal_size.height()
-            )  # TODO: height doesn't work as expected
+    #     else:
+    #         self.setWindowFlags(
+    #             Qt.WindowCloseButtonHint
+    #             | Qt.WindowMinimizeButtonHint
+    #             | Qt.WindowStaysOnTopHint
+    #             | Qt.MSWindowsFixedSizeDialogHint
+    #         )
+    #         self.resize(
+    #             self.width(), self.normal_size.height()
+    #         )  # TODO: Height doesn't work as expected
 
-    def mouseDoubleClickEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            self.handle_minimize()
+    # def mouseDoubleClickEvent(self, event):
+    #     if event.buttons() == Qt.LeftButton:
+    #         self.handle_minimize()
 
-        event.accept()
+    #     event.accept()
 
     # def mousePressEvent(self, event):
     #     if event.button() == Qt.LeftButton:

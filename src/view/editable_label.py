@@ -4,14 +4,14 @@ from PyQt5.QtGui import QFontMetrics
 
 
 class EditableLabel(QWidget):
-    text_confirmed = pyqtSignal(str)
+    confirm_text = pyqtSignal(str)
 
-    def __init__(self, text="", parent=None):
-        super().__init__(parent)
+    def __init__(self, text: str = ""):
+        super().__init__()
 
         self._full_text = text
 
-        self.label = QLabel()
+        self.label = QLabel(self._full_text)
         self.line_edit = QLineEdit()
         self.line_edit.hide()
         self.set_text()
@@ -22,10 +22,8 @@ class EditableLabel(QWidget):
         layout.addWidget(self.line_edit)
 
         self.label.mouseDoubleClickEvent = self.enter_edit_mode
-        self.line_edit.returnPressed.connect(self.confirm_edit)
-        self.line_edit.editingFinished.connect(self.cancel_edit_if_needed)
-
-        self._in_confirm = False
+        self.line_edit.returnPressed.connect(self.emit_changed_text)
+        self.line_edit.editingFinished.connect(self.cancel_edit)
 
     def enter_edit_mode(self, event=None):
         self.label.hide()
@@ -34,26 +32,18 @@ class EditableLabel(QWidget):
         self.line_edit.setFocus()
         self.line_edit.selectAll()
 
-    def confirm_edit(self):
-        self._in_confirm = True
-        new_text = self.line_edit.text()
-        self.text_confirmed.emit(new_text)
-
-    def cancel_edit_if_needed(self):
-        if not self._in_confirm:
-            self.cancel_edit()
-
-        self._in_confirm = False
-
     def cancel_edit(self):
         self.line_edit.hide()
         self.label.show()
 
-    def apply_validated_text(self, text):
-        self._full_text = text
+    def apply_validated_text(self):
+        self._full_text = self.line_edit.text()
         self.set_text()
         self.label.show()
         self.line_edit.hide()
+
+    def emit_changed_text(self):
+        self.confirm_text.emit(self.line_edit.text())
 
     @property
     def text(self):

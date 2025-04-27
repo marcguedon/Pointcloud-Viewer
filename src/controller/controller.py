@@ -1,13 +1,34 @@
 import os
-import pyvista as pv
+from click import edit
+import yaml
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import pyqtSignal, QObject
 from model.pointcloud import Pointcloud
 from model.filter import Filter
+from pointcloud_service import PointcloudService
+from filter_service import FilterService
+from utils.log import Log
 
 
-class Controller:
+class Controller(QObject):
     _instance = None
+    notify_signal = pyqtSignal(Log, str)
+    close_application_signal = pyqtSignal()
+    change_theme_signal = pyqtSignal(str)
+    show_hide_axes_signal = pyqtSignal()
 
-    def __new__(cls, *args, **kwargs):
+    add_pointcloud_signal = pyqtSignal(Pointcloud)
+    delete_pointcloud_signal = pyqtSignal(Pointcloud)
+    toggle_pointcloud_visibility_signal = pyqtSignal(Pointcloud, bool)
+
+    add_filter_signal = pyqtSignal(Filter)
+    delete_filter_signal = pyqtSignal(Filter)
+    toggle_filter_visibility_signal = pyqtSignal(Filter, bool)
+    edit_filter_signal = pyqtSignal(Filter)
+
+    update_filter_signal = pyqtSignal(Filter)
+
+    def __new__(cls):
         if not cls._instance:
             cls._instance = super(Controller, cls).__new__(cls)
             cls._instance._initialized = False
@@ -18,117 +39,252 @@ class Controller:
         if self._initialized:
             return
 
+        super().__init__()
         self._initialized = True
 
-        self.pointclouds_list = []
-        self.filters_list = []
+        self.pointcloud_srv = PointcloudService()
+        self.filter_srv = FilterService()
+
+        self.pointclouds_list: list[Pointcloud] = []
+        self.filters_list: list[Filter] = []
+
+        self.theme = "white"
+
+    # APPLICATION
+    def notify(self, log: Log, message: str):
+        self.notify_signal.emit(log, message)
+
+    def close_application(self):
+        self.close_application_signal.emit()
+
+    def change_theme(self):
+        if self.theme == "white":
+            self.theme = "black"
+        else:
+            self.theme = "white"
+
+        self.change_theme_signal.emit(self.theme)
+
+    def show_hide_axes(self):
+        self.show_hide_axes_signal.emit()
 
     # POINTCLOUDS
-    def load_pointcloud(self, path):
-        name = self.get_name_from_path(path)
-        pointcloud_data = pv.read(path)
-
-        self.pointclouds_list.append(Pointcloud(name, pointcloud_data))
-
-        return name, pointcloud_data
-
-    def delete_pointcloud(self, name):
-        for pointcloud in self.pointclouds_list:
-            if pointcloud.name == name:
-                self.pointclouds_list.remove(pointcloud)
-                break
-
-    def rename_pointcloud(self, old_name, new_name):
-        for pointcloud in self.pointclouds_list:
-            if pointcloud.name == old_name:
+    def rename_pointcloud(self, pointcloud: Pointcloud, new_name: str):
+        if new_name != pointcloud.name:
+            if self.is_pointcloud_name_available(new_name):
+                self.notify(
+                    Log.SUCCESS, f"Pointcloud renamed: {pointcloud.name} -> {new_name}"
+                )
                 pointcloud.name = new_name
-                break
+                return True
+
+            else:
+                self.notify(Log.WARNING, f"Pointcloud name already exists: {new_name}")
+                return False
+
+        else:
+            self.notify(Log.INFO, "Pointcloud name unchanged")
+            return False
 
     def is_pointcloud_name_available(self, name):
         return all(pointcloud.name != name for pointcloud in self.pointclouds_list)
 
-    def set_pointcloud_name(self, old_name, new_name):
-        for pointcloud in self.pointclouds_list:
-            if pointcloud.name == old_name:
-                pointcloud.name = new_name
-                break
-
-    def get_pointcloud_by_name(self, name) -> Pointcloud | None:
-        for pointcloud in self.pointclouds_list:
-            if pointcloud.name == name:
-                return pointcloud
-
-        return None
-
-    def get_pointclouds(self):
-        return self.pointclouds_list
-
     # FILTERS
-    def add_filter(self, name, bounds, color):  # TODO Manage the name
-        box = pv.Box(bounds=bounds)
-        self.filters_list.append(Filter(name, box, color))
+    def add_filter(
+        self,
+        name: str,
+        bounds: tuple[float, float, float, float, float, float],
+        color: str,
+    ) -> Filter:
+        name = self.filter_srv.get_filter_name_from_str(self.filters_list, name)
 
-        return box
+        filter = Filter(name, bounds, color)
+        self.filters_list.append(filter)
 
-    def delete_filter(self, name):
-        for filter in self.filters_list:
-            if filter.name == name:
-                self.filters_list.remove(filter)
-                break
+        self.add_filter_signal.emit(filter)
 
-    def rename_filter(self, old_name, new_name):
-        for filter in self.filters_list:
-            if filter.name == old_name:
+        self.notify(Log.SUCCESS, f"Filter added: {filter.name}")
+
+    def delete_filter(self, filter: Filter):
+        try:
+            self.filters_list.remove(filter)
+            self.delete_filter_signal.emit(filter)
+        except ValueError:
+            self.notify(Log.ERROR, f"Filter not found: {filter.name}")
+
+    def edit_filter(self, filter: Filter):
+        self.edit_filter_signal.emit(filter)
+
+    def rename_filter(self, filter: Filter, new_name: str):
+        if new_name != filter.name:
+            if self.is_filter_name_available(new_name):
+                self.notify(Log.SUCCESS, f"Filter renamed: {filter.name} -> {new_name}")
                 filter.name = new_name
-                break
+                return True
+
+            else:
+                self.notify(Log.WARNING, f"Filter name already exists: {new_name}")
+
+        else:
+            self.notify(Log.INFO, "Filter name unchanged")
+
+        return False
 
     def is_filter_name_available(self, name):
         return all(filter.name != name for filter in self.filters_list)
 
-    def set_filter_name(self, old_name, new_name):
-        for filter in self.filters_list:
-            if filter.name == old_name:
-                filter.name = new_name
-                break
+    def set_filter_bounds(
+        self, filter: Filter, bounds: tuple[float, float, float, float, float, float]
+    ):
+        filter.box = bounds
+        self.update_filter_signal.emit(filter)
 
-    def get_filter_by_name(self, name) -> Filter | None:
-        for filter in self.filters_list:
-            if filter.name == name:
-                return filter
+    def set_filter_color(self, filter: Filter, color: str):
+        filter.color = color
+        self.update_filter_signal.emit(filter)
 
-        return None
+    # POINTCLOUDS #
+    # Pointcloud management
+    def load_pointcloud(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            caption="Load pointcloud",
+            directory="",
+            filter="Pointcloud file (*.ply *.pcd *.xyz);;All files (*)",
+        )
 
-    def set_filter_bounds(self, name, bounds):
-        for filter in self.filters_list:
-            if filter.name == name:
-                box = pv.Box(bounds=bounds)
-                filter.box = box
-                return box
+        if not file_path:
+            self.notify(Log.INFO, "No file selected")
+            return
 
-        return None
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-    def set_filter_color(self, name, color):
-        for filter in self.filters_list:
-            if filter.name == name:
-                filter.color = color
-                break
+        if not file_path.endswith((".ply", ".pcd", ".xyz")):
+            self.notify(Log.WARNING, "Invalid file format")
+            return
 
-    def get_filters(self):
-        return self.filters_list
+        name, pointcloud_data = self.pointcloud_srv.get_pointcloud_data_from_path(
+            self.pointclouds_list, file_path
+        )
 
-    # UTILITY
-    def get_name_from_path(self, path):
-        filename = self.extract_name(path)
+        pointcloud = Pointcloud(name, pointcloud_data)
+        self.pointclouds_list.append(pointcloud)
 
-        existing_names = {pointcloud.name for pointcloud in self.pointclouds_list}
-        original_filename = filename
-        count = 1
+        self.add_pointcloud_signal.emit(pointcloud)
 
-        while filename in existing_names:
-            filename = f"{original_filename}_{count}"
-            count += 1
+        self.notify(
+            Log.SUCCESS,
+            f"Pointcloud loaded: {pointcloud.name} ({pointcloud.points.n_points} points)",
+        )
 
-        return filename
+    def delete_pointcloud(self, pointcloud_to_delete: Pointcloud):
+        try:
+            self.pointclouds_list.remove(pointcloud_to_delete)
+            self.delete_pointcloud_signal.emit(pointcloud_to_delete)
+        except ValueError:
+            self.notify(Log.ERROR, f"Pointcloud not found: {pointcloud_to_delete.name}")
 
-    def extract_name(self, path):
-        return os.path.splitext(os.path.basename(path))[0]
+    # Pointcloud visibility toggle
+    def toggle_pointcloud_visibility(self, pointcloud: Pointcloud, is_visible: bool):
+        self.toggle_pointcloud_visibility_signal.emit(pointcloud, is_visible)
+
+        state = "shown" if is_visible else "hidden"
+        self.notify_signal.emit(
+            Log.INFO, f"Toggle pointcloud visibility: {state} ({pointcloud.name})"
+        )
+
+    # Filter visibility toggle
+    def toggle_filter_visibility(self, filter: Filter, is_visible: bool):
+        self.toggle_filter_visibility_signal.emit(filter, is_visible)
+
+        state = "shown" if is_visible else "hidden"
+        self.notify_signal.emit(
+            Log.INFO, f"Toggle filter visibility: {state} ({filter.name})"
+        )
+
+    def import_filter(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            caption="Import filters",
+            directory="",
+            filter="YAML files (*.yaml *.yml);;All files (*)",
+        )
+
+        if not file_path:
+            self.notify_signal.emit(Log.INFO, "No file selected")
+            return
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        if not file_path.endswith((".yaml", ".yml")):
+            self.notify_signal.emit(
+                Log.WARNING, "Invalid file format. Only YAML files are supported."
+            )
+            return
+
+        with open(file_path, "r", encoding="UTF-8") as file:
+            filters_dict = yaml.safe_load(file)
+
+        for filter_name, filter_data in filters_dict["filters"].items():
+            bounds = filter_data["bounds"]
+            filter_color = filter_data["color"]
+
+            self.add_filter(filter_name, bounds, filter_color)
+
+        self.notify_signal.emit(
+            Log.SUCCESS,
+            f"Filters imported successfully: {os.path.basename(file_path)}",
+        )
+
+    def export_filter(self):
+
+        if not self.filters_list:
+            self.notify_signal.emit(Log.INFO, "No filters to export")
+            return
+
+        # dialog = QFileDialog(self.main_window, "Export filters")
+        dialog = QFileDialog(caption="Export filters")
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+        dialog.setNameFilters(["YAML files (*.yaml *.yml)", "All files (*)"])
+        # dialog.setDefaultSuffix("yaml") # Automatically adds .yaml extension
+        dialog.setOption(QFileDialog.DontConfirmOverwrite, True)
+
+        def correct_extension_on_click(path):
+            if path and not path.endswith((".yaml", ".yml")):
+                corrected = path + ".yaml"
+                dialog.selectFile(corrected)
+
+        dialog.currentChanged.connect(correct_extension_on_click)
+
+        if dialog.exec_() == QFileDialog.Accepted:
+            file_path = dialog.selectedFiles()[0]
+
+            if os.path.exists(file_path):
+                reply = QMessageBox.question(
+                    None,
+                    "File exists",
+                    f"The file {os.path.basename(file_path)} already exists.<br>Do you want to overwrite it?",
+                    buttons=QMessageBox.Yes | QMessageBox.No,
+                    defaultButton=QMessageBox.No,
+                )
+                if reply != QMessageBox.Yes:
+                    self.notify_signal.emit(Log.INFO, "Export cancelled")
+                    return
+
+            filters_dict = {
+                "filters": {
+                    filter.name: {
+                        "bounds": [round(val, 2) for val in filter.box.bounds],
+                        "color": filter.color,
+                    }
+                    for filter in self.filters_list
+                }
+            }
+
+            with open(file_path, "w", encoding="UTF-8") as file:
+                yaml.dump(filters_dict, file)
+
+            self.notify_signal.emit(
+                Log.SUCCESS,
+                f"Filters exported successfully: {os.path.basename(file_path)}",
+            )

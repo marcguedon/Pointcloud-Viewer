@@ -1,13 +1,19 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
+from controller.controller import Controller
 from view.viewer_layout import ViewerLayout
 from model.filter import Filter
 from view.filter_window import FilterDialog
 
 
+# TODO: Rework the filter window management
 class ViewerArea(QMdiArea):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
+
+        self.controller = Controller()
+        self.controller.edit_filter_signal.connect(self.show_filter_dialog)
+        self.controller.delete_filter_signal.connect(self.close_filter_dialog)
 
         self.setViewMode(QMdiArea.SubWindowView)
         self.setOption(QMdiArea.DontMaximizeSubWindowOnActivation, True)
@@ -27,31 +33,21 @@ class ViewerArea(QMdiArea):
 
         self.viewer_subwindow.showMaximized()
 
+        self.filter_dialog = None
+
     def show_filter_dialog(self, filter: Filter):
-        sub = FilterDialog(self, filter)
-        self.addSubWindow(sub)
-        sub.show()
+        if self.filter_dialog is None:
+            self.filter_dialog = FilterDialog(filter)
+            self.addSubWindow(self.filter_dialog)
+            self.filter_dialog.show()
 
-    def add_pointcloud(self, name: str, data):
-        self.viewer_layout.add_pointcloud(name, data)
+        else:
+            self.filter_dialog.change_current_filter(filter)
+            self.filter_dialog.setFocus()
+            self.filter_dialog.raise_()
 
-    def delete_pointcloud(self, name: str):
-        self.viewer_layout.delete_pointcloud(name)
-
-    def change_pointcloud_name(self, old_name: str, new_name: str):
-        self.viewer_layout.change_pointcloud_name(old_name, new_name)
-
-    def add_filter(self, name: str, data, color: str):
-        self.viewer_layout.add_filter(name, data, color)
-
-    def delete_filter(self, name: str):
-        self.viewer_layout.delete_filter(name)
-
-    def change_filter_name(self, old_name: str, new_name: str):
-        self.viewer_layout.change_filter_name(old_name, new_name)
-
-    def change_theme(self):
-        self.viewer_layout.change_theme()
-
-    def show_hide_axes(self):
-        self.viewer_layout.show_hide_axes()
+    def close_filter_dialog(self, filter: Filter):
+        if self.filter_dialog is not None:
+            if self.filter_dialog.current_filter == filter:
+                self.filter_dialog.close()
+                self.filter_dialog = None

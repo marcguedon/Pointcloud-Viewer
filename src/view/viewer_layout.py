@@ -2,17 +2,38 @@ import numpy as np
 import pyvista as pv
 from pyvistaqt import QtInteractor
 from PyQt5.QtWidgets import *
+from controller.controller import Controller
+from model.filter import Filter
+from model.pointcloud import Pointcloud
+from utils.log import Log
 
 
 class ViewerLayout(QVBoxLayout):
     def __init__(self):
         super().__init__()
 
-        self.theme = "white"
+        self.controller = Controller()
+        self.controller.change_theme_signal.connect(self.change_theme)
+        self.controller.show_hide_axes_signal.connect(self.show_hide_axes)
+
+        self.controller.add_pointcloud_signal.connect(self.add_pointcloud)
+        self.controller.delete_pointcloud_signal.connect(self.remove_pointcloud)
+        self.controller.toggle_pointcloud_visibility_signal.connect(
+            self.toggle_pointcloud_visibility
+        )
+
+        self.controller.add_filter_signal.connect(self.add_filter)
+        self.controller.delete_filter_signal.connect(self.remove_filter)
+        self.controller.toggle_filter_visibility_signal.connect(
+            self.toggle_filter_visibility
+        )
+
+        self.controller.update_filter_signal.connect(self.update_viewer)
+
         self.show_axes = True
 
-        self.pointclouds = {}
-        self.filters = {}
+        self.pointclouds_list: list[Pointcloud] = []
+        self.filters_list: list[Filter] = []
 
         self.create_ui()
 
@@ -25,32 +46,49 @@ class ViewerLayout(QVBoxLayout):
         # self.add_origin_axes(line_width=0.5)
         self.addWidget(self.plotter.interactor)
 
-    def add_pointcloud(self, name: str, data: pv.PolyData):
-        self.pointclouds[name] = data
+    # POINTCLOUDS #
+    def add_pointcloud(self, pointcloud: Pointcloud):
+        self.pointclouds_list.append(pointcloud)
         self.update_viewer()
 
-    def delete_pointcloud(self, name: str):
-        if name in self.pointclouds:
-            del self.pointclouds[name]
+    def remove_pointcloud(self, pointcloud_to_remove: Pointcloud):
+        try:
+            self.pointclouds_list.remove(pointcloud_to_remove)
+
+            self.update_viewer()
+        except ValueError:
+            self.controller.notify(
+                Log.ERROR, f"Pointcloud not found: {pointcloud_to_remove}."
+            )
+
+    def toggle_pointcloud_visibility(self, pointcloud: Pointcloud, is_visible: bool):
+        if is_visible:
+            self.add_pointcloud(pointcloud)
+        else:
+            self.remove_pointcloud(pointcloud)
+
+    # FILTERS #
+    def add_filter(self, filter: Filter):
+        self.filters_list.append(filter)
         self.update_viewer()
 
-    def change_pointcloud_name(self, old_name: str, new_name: str):
-        if old_name in self.pointclouds:
-            self.pointclouds[new_name] = self.pointclouds.pop(old_name)
+    def remove_filter(self, filter_to_remove: Filter):
+        try:
+            self.filters_list.remove(filter_to_remove)
 
-    def add_filter(self, name: str, data: pv.PolyData, color: str):
-        self.filters[name] = (data, color)
-        self.update_viewer()
+            self.update_viewer()
+        except ValueError:
+            self.controller.notify(
+                Log.ERROR, f"Filter not found: {filter_to_remove.name}."
+            )
 
-    def delete_filter(self, name: str):
-        if name in self.filters:
-            del self.filters[name]
-        self.update_viewer()
+    def toggle_filter_visibility(self, filter: Filter, is_visible: bool):
+        if is_visible:
+            self.add_filter(filter)
+        else:
+            self.remove_filter(filter)
 
-    def change_filter_name(self, old_name: str, new_name: str):
-        if old_name in self.filters:
-            self.filters[new_name] = self.filters.pop(old_name)
-
+    # UTILITY #
     def show_hide_axes(self):
         self.show_axes = not self.show_axes
 
@@ -60,13 +98,8 @@ class ViewerLayout(QVBoxLayout):
         else:
             self.plotter.remove_actor("origin_axes")
 
-    def change_theme(self):
-        if self.theme == "white":
-            self.plotter.set_background("black")
-            self.theme = "black"
-        else:
-            self.plotter.set_background("white")
-            self.theme = "white"
+    def change_theme(self, theme: str):
+        self.plotter.set_background(theme)
 
     def clear_viewer(self):
         self.plotter.clear()
@@ -83,24 +116,25 @@ class ViewerLayout(QVBoxLayout):
 
         self.clear_viewer()
 
-        for filter_name, filter_data in self.filters.items():
-            data, color = filter_data
-            self.plotter.add_mesh(data, style="wireframe", color=color, line_width=3)
+        for filter in self.filters_list:
+            self.plotter.add_mesh(
+                filter.box, style="wireframe", color=filter.color, line_width=3
+            )
 
-        for pointcloud_name, pointcloud_data in self.pointclouds.items():
-            if self.filters:
-                for filter_name, filter_data in self.filters.items():
-                    data, color = filter_data
-
-                    filtered_data = self.filter_points_inside_polygon(
-                        pointcloud_data, data
+        for pointcloud in self.pointclouds_list:
+            if self.filters_list:
+                for filter in self.filters_list:
+                    filtered_pointcloud = self.filter_points_inside_polygon(
+                        pointcloud.points, filter.box
                     )
 
-                    if filtered_data.n_points > 0:
-                        self.plotter.add_mesh(filtered_data, show_scalar_bar=False)
+                    if filtered_pointcloud.n_points > 0:
+                        self.plotter.add_mesh(
+                            filtered_pointcloud, show_scalar_bar=False
+                        )
 
             else:
-                self.plotter.add_mesh(pointcloud_data, show_scalar_bar=False)
+                self.plotter.add_mesh(pointcloud.points, show_scalar_bar=False)
 
         if self.show_axes:
             self.add_origin_axes(line_width=0.5)
@@ -109,8 +143,8 @@ class ViewerLayout(QVBoxLayout):
         self.plotter.camera_position = camera_position
         self.plotter.render()
 
-    def add_origin_axes(self, scale=1.0, line_width=1.0):
-        def make_arrow(direction, color):
+    def add_origin_axes(self, scale: float = 1.0, line_width: float = 1.0):
+        def make_arrow(direction: tuple[int, int, int], color: tuple[int, int, int]):
             arrow = pv.Arrow(
                 start=(0, 0, 0),
                 direction=direction,
