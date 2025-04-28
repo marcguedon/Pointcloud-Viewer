@@ -5,23 +5,24 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QDoubleSpinBox,
-    QPushButton,
-    QColorDialog,
     QStyle,
 )
-from PyQt5.QtGui import QCursor, QColor
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, pyqtSignal
 from controller.controller import Controller
 from model.filter import Filter
 
 
-class FilterDialog(QMdiSubWindow):
+class EditFilterWindow(QMdiSubWindow):
     closed = pyqtSignal(Filter)
 
     def __init__(self, filter: Filter):
         super().__init__()
 
         self.controller = Controller()
+        self.controller.update_filter_signal.connect(
+            lambda filter: self.setWindowTitle(f"Edit Filter: {filter.name}")
+        )
 
         self.is_changing_filter = False
         self.is_collapsed = False
@@ -31,7 +32,7 @@ class FilterDialog(QMdiSubWindow):
 
         self.coord_inputs = {}
 
-        self.setWindowTitle("Edit Filter")
+        self.setWindowTitle(f"Edit Filter: {self.current_filter.name}")
         self.setWindowFlags(
             Qt.WindowCloseButtonHint
             | Qt.WindowMinimizeButtonHint
@@ -51,61 +52,45 @@ class FilterDialog(QMdiSubWindow):
         self.setWidget(main_widget)
 
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(8)
         main_widget.setLayout(main_layout)
 
-        parameters_layout = QHBoxLayout()
-        main_layout.addLayout(parameters_layout)
+        first_line_layout = QHBoxLayout()
+        second_line_layout = QHBoxLayout()
 
-        left_layout = QVBoxLayout()
-        left_layout.setSpacing(10)
-        parameters_layout.addLayout(left_layout)
+        labels = ["X min", "X max", "Y min", "Y max", "Z min", "Z max"]
+        bounds = self.current_filter.box.bounds
 
-        # Filter coordinates
-        for label, value in zip(
-            ["X min", "X max", "Y min", "Y max", "Z min", "Z max"],
-            self.current_filter.box.bounds,
-        ):
+        for i, (bound_label, value) in enumerate(zip(labels, bounds)):
             spin = QDoubleSpinBox()
-            spin.setToolTip(f"Enter {label.lower()} coordinate")
+            spin.setFixedHeight(20)
+            font = spin.font()
+            font.setPointSize(8)
+            spin.setFont(font)
+            spin.setToolTip(f"Enter {bound_label.lower()} coordinate")
             spin.setRange(-1000, 1000)
             spin.setDecimals(2)
             spin.setSingleStep(0.1)
             spin.setValue(value)
             spin.valueChanged.connect(self.update_viewer)
-            self.coord_inputs[label] = spin
+            self.coord_inputs[bound_label] = spin
 
             layout = QVBoxLayout()
             layout.setSpacing(0)
-            layout.addWidget(QLabel(label))
+
+            label = QLabel(bound_label)
+            label.setFont(QFont("Arial", 10))
+            layout.addWidget(label)
             layout.addWidget(spin)
-            left_layout.addLayout(layout)
 
-        # Filter color
-        color_layout = QHBoxLayout()
-        color_layout.setSpacing(5)
-        left_layout.addLayout(color_layout)
+            if i % 2 == 0:
+                first_line_layout.addLayout(layout)
+            else:
+                second_line_layout.addLayout(layout)
 
-        color_label = QLabel("Filter Color:")
-        color_layout.addWidget(color_label)
-
-        self.color_button = QPushButton()
-        self.color_button.setToolTip("Choose filter color")
-        self.color_button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.color_button.setFixedSize(40, 20)
-        self.color_button.setStyleSheet(
-            f"""
-                QPushButton {{
-                    background-color: {self.current_filter.color};
-                }}
-                QToolTip {{
-                    background-color: #ffffdc;
-                    color: black;
-                    border: 1px solid black;
-                }}
-            """
-        )
-        self.color_button.clicked.connect(self.change_filter_color)
-        color_layout.addWidget(self.color_button)
+        main_layout.addLayout(first_line_layout)
+        main_layout.addLayout(second_line_layout)
 
         self.normal_size = self.sizeHint()
 
@@ -115,6 +100,7 @@ class FilterDialog(QMdiSubWindow):
 
     def change_current_filter(self, filter: Filter):
         self.current_filter = filter
+        self.setWindowTitle(f"Edit Filter: {self.current_filter.name}")
 
         self.is_changing_filter = True
 
@@ -125,42 +111,6 @@ class FilterDialog(QMdiSubWindow):
             self.coord_inputs[label].setValue(value)
 
         self.is_changing_filter = False
-
-        self.color_button.setStyleSheet(
-            f"""
-                QPushButton {{
-                    background-color: {self.current_filter.color};
-                }}
-                QToolTip {{
-                    background-color:
-                        #ffffdc;
-                    color: black;
-                    border: 1px solid black;
-                }}
-            """
-        )
-
-    def change_filter_color(self):
-        color = QColorDialog.getColor(
-            initial=QColor(self.current_filter.color), parent=self
-        )
-
-        if color.isValid():
-            self.controller.set_filter_color(self.current_filter, color.name())
-            self.color_button.setStyleSheet(
-                f"""
-                    QPushButton {{
-                        background-color: {self.current_filter.color};
-                    }}
-                    QToolTip {{
-                        background-color: #ffffdc;
-                        color: black;
-                        border: 1px solid black;
-                    }}
-                """
-            )
-
-            self.update_viewer()
 
     def update_viewer(self):
         if self.is_changing_filter:

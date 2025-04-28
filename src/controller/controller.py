@@ -119,6 +119,7 @@ class Controller(QObject):
             if self.is_filter_name_available(new_name):
                 self.notify(Log.SUCCESS, f"Filter renamed: {filter.name} -> {new_name}")
                 filter.name = new_name
+                self.update_filter_signal.emit(filter)
                 return True
 
             else:
