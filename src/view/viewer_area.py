@@ -6,7 +6,6 @@ from view.filter_window import FilterDialog
 from model.filter import Filter
 
 
-# TODO: Rework the filter window management (doesn't work as expected)
 class ViewerArea(QMdiArea):
     def __init__(self):
         super().__init__()
@@ -38,6 +37,7 @@ class ViewerArea(QMdiArea):
     def show_filter_dialog(self, filter: Filter):
         if self.filter_dialog is None:
             self.filter_dialog = FilterDialog(filter)
+            self.filter_dialog.closed.connect(self.close_filter_dialog)
             self.addSubWindow(self.filter_dialog)
             self.filter_dialog.show()
 

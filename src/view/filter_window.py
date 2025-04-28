@@ -7,15 +7,17 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QPushButton,
     QColorDialog,
-    QStyle, 
+    QStyle,
 )
 from PyQt5.QtGui import QCursor, QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from controller.controller import Controller
 from model.filter import Filter
 
 
 class FilterDialog(QMdiSubWindow):
+    closed = pyqtSignal(Filter)
+
     def __init__(self, filter: Filter):
         super().__init__()
 
@@ -36,6 +38,7 @@ class FilterDialog(QMdiSubWindow):
             | Qt.WindowStaysOnTopHint  # TODO: To remove from title bar menu
             | Qt.MSWindowsFixedSizeDialogHint
         )
+        self.setAttribute(Qt.WA_DeleteOnClose, True)
 
         self.normal_size = None
         self.create_ui()
@@ -106,6 +109,10 @@ class FilterDialog(QMdiSubWindow):
 
         self.normal_size = self.sizeHint()
 
+    def closeEvent(self, event):
+        self.closed.emit(self.current_filter)
+        super().closeEvent(event)
+
     def change_current_filter(self, filter: Filter):
         self.current_filter = filter
 
@@ -171,40 +178,41 @@ class FilterDialog(QMdiSubWindow):
             ),
         )
 
+    def handle_minimize(self):
+        self.is_collapsed = not self.is_collapsed
+        self.showNormal()
+
+        if self.is_collapsed:
+            self.setWindowFlags(
+                Qt.WindowCloseButtonHint
+                | Qt.WindowMaximizeButtonHint
+                | Qt.WindowStaysOnTopHint
+                | Qt.MSWindowsFixedSizeDialogHint
+            )
+            self.resize(self.width(), self.title_bar_height)
+
+        else:
+            self.setWindowFlags(
+                Qt.WindowCloseButtonHint
+                | Qt.WindowMinimizeButtonHint
+                | Qt.WindowStaysOnTopHint
+                | Qt.MSWindowsFixedSizeDialogHint
+            )
+            self.resize(
+                self.width(), self.normal_size.height()
+            )  # TODO: Height doesn't work as expected
+
+    def mouseDoubleClickEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.handle_minimize()
+
+        event.accept()
+
+    # NECESSARY to override the minimize/maximize button
     # def changeEvent(self, event):
     #     if event.type() == QEvent.WindowStateChange:
     #         if self.windowState():
     #             self.handle_minimize()
-
-    #     event.accept()
-
-    # def handle_minimize(self):
-    #     self.is_collapsed = not self.is_collapsed
-    #     self.showNormal()
-
-    #     if self.is_collapsed:
-    #         self.setWindowFlags(
-    #             Qt.WindowCloseButtonHint
-    #             | Qt.WindowMaximizeButtonHint
-    #             | Qt.WindowStaysOnTopHint
-    #             | Qt.MSWindowsFixedSizeDialogHint
-    #         )
-    #         self.resize(self.width(), self.title_bar_height)
-
-    #     else:
-    #         self.setWindowFlags(
-    #             Qt.WindowCloseButtonHint
-    #             | Qt.WindowMinimizeButtonHint
-    #             | Qt.WindowStaysOnTopHint
-    #             | Qt.MSWindowsFixedSizeDialogHint
-    #         )
-    #         self.resize(
-    #             self.width(), self.normal_size.height()
-    #         )  # TODO: Height doesn't work as expected
-
-    # def mouseDoubleClickEvent(self, event):
-    #     if event.buttons() == Qt.LeftButton:
-    #         self.handle_minimize()
 
     #     event.accept()
 
@@ -232,26 +240,20 @@ class FilterDialog(QMdiSubWindow):
 
     #     event.accept()
 
-    # def closeEvent(self, event):
-    #     """ Gestion de la fermeture de la fenêtre (clique sur le bouton Close) """
-    #     # Tu peux faire des actions supplémentaires ici avant de fermer la fenêtre si nécessaire
+    # def showMinimized(self):
+    #     print("showMinimized")
+    #     self.is_collapsed = True
     #     self.setWindowFlags(
     #         Qt.WindowCloseButtonHint
-    #         | Qt.WindowMinimizeButtonHint
+    #         | Qt.WindowMaximizeButtonHint
     #         | Qt.WindowStaysOnTopHint
     #         | Qt.MSWindowsFixedSizeDialogHint
     #     )
-    #     event.accept()
-
-    # def showMinimized(self):
-    #     """ Quand on appuie sur le bouton Minimize """
-    #     self.is_collapsed = True
-    #     self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
     #     self.resize(self.width(), self.title_bar_height)
     #     super().showMinimized()
 
     # def showNormal(self):
-    #     """ Quand on appuie sur le bouton Restore ou Maximize """
+    #     print("showNormal")
     #     self.is_collapsed = False
     #     self.setWindowFlags(
     #         Qt.WindowCloseButtonHint
