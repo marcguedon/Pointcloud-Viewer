@@ -1,12 +1,11 @@
 import os
-from click import edit
 import yaml
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
+from controller.pointcloud_service import PointcloudService
+from controller.filter_service import FilterService
 from model.pointcloud import Pointcloud
 from model.filter import Filter
-from pointcloud_service import PointcloudService
-from filter_service import FilterService
 from utils.log import Log
 
 

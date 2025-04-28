@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QMenuBar
+from controller.controller import Controller
 from view.control_layout import ControlLayout
 from view.viewer_area import ViewerArea
-from controller.controller import Controller
 from utils.log import Log
 
 

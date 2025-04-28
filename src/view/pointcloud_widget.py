@@ -1,10 +1,10 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QCheckBox, QPushButton
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QCursor
-from view.editable_label import EditableLabel
-from model.pointcloud import Pointcloud
-from view.pointcloud_menu import PointcloudMenu
 from controller.controller import Controller
+from view.editable_label import EditableLabel
+from view.pointcloud_menu import PointcloudMenu
+from model.pointcloud import Pointcloud
 
 
 class PointcloudWidget(QWidget):

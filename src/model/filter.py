@@ -1,5 +1,5 @@
-import pyvista as pv
 from dataclasses import dataclass
+import pyvista as pv
 from pyvista import PolyData
 
 

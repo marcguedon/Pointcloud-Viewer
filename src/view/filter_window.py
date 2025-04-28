@@ -1,8 +1,18 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import (
+    QWidget,
+    QMdiSubWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QDoubleSpinBox,
+    QPushButton,
+    QColorDialog,
+    QStyle, 
+)
 from PyQt5.QtGui import QCursor, QColor
 from PyQt5.QtCore import Qt
-from model.filter import Filter
 from controller.controller import Controller
+from model.filter import Filter
 
 
 class FilterDialog(QMdiSubWindow):

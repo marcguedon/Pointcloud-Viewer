@@ -1,11 +1,10 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QCheckBox, QPushButton
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QCursor
 from controller.controller import Controller
-from model.filter import Filter
 from view.filter_menu import FilterMenu
 from view.editable_label import EditableLabel
-from controller.controller import Controller
+from model.filter import Filter
 
 
 class FilterWidget(QWidget):

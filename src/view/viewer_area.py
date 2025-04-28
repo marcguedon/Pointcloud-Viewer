@@ -1,12 +1,12 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QMdiArea, QMdiSubWindow
 from PyQt5.QtCore import Qt
 from controller.controller import Controller
 from view.viewer_layout import ViewerLayout
-from model.filter import Filter
 from view.filter_window import FilterDialog
+from model.filter import Filter
 
 
-# TODO: Rework the filter window management
+# TODO: Rework the filter window management (doesn't work as expected)
 class ViewerArea(QMdiArea):
     def __init__(self):
         super().__init__()

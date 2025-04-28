@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
+from controller.controller import Controller
 from view.pointclouds_layout import PointcloudsLayout
 from view.filters_layout import FiltersLayout
-from controller.controller import Controller
 
 
 class ControlLayout(QVBoxLayout):
