@@ -8,11 +8,14 @@ from PyQt5.QtWidgets import (
     QStyle,
 )
 from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 from controller.controller import Controller
 from model.filter import Filter
 
 
+# TODO: Minimize/maximize event are still bugging
+# TODO: Move action in the menu does not work
+# TODO: Remove Stay on Top action from the menu
 class EditFilterWindow(QMdiSubWindow):
     closed = pyqtSignal(Filter)
 
@@ -36,16 +39,13 @@ class EditFilterWindow(QMdiSubWindow):
         self.setWindowFlags(
             Qt.WindowCloseButtonHint
             | Qt.WindowMinimizeButtonHint
-            | Qt.WindowStaysOnTopHint  # TODO: To remove from title bar menu
+            | Qt.WindowStaysOnTopHint
             | Qt.MSWindowsFixedSizeDialogHint
         )
         self.setAttribute(Qt.WA_DeleteOnClose, True)
 
         self.normal_size = None
         self.create_ui()
-
-        # self.is_dragging = False
-        # self.drag_start_pos = None
 
     def create_ui(self):
         main_widget = QWidget()
@@ -92,11 +92,24 @@ class EditFilterWindow(QMdiSubWindow):
         main_layout.addLayout(first_line_layout)
         main_layout.addLayout(second_line_layout)
 
-        self.normal_size = self.sizeHint()
+        self.normal_height = self.sizeHint().height()
 
     def closeEvent(self, event):
         self.closed.emit(self.current_filter)
         super().closeEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.handle_minimize()
+
+        event.accept()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.windowState():
+                self.handle_minimize()
+
+        event.accept()
 
     def change_current_filter(self, filter: Filter):
         self.current_filter = filter
@@ -139,8 +152,7 @@ class EditFilterWindow(QMdiSubWindow):
                 | Qt.WindowStaysOnTopHint
                 | Qt.MSWindowsFixedSizeDialogHint
             )
-            self.resize(self.width(), self.title_bar_height)
-
+            self.setFixedHeight(self.title_bar_height)
         else:
             self.setWindowFlags(
                 Qt.WindowCloseButtonHint
@@ -148,67 +160,4 @@ class EditFilterWindow(QMdiSubWindow):
                 | Qt.WindowStaysOnTopHint
                 | Qt.MSWindowsFixedSizeDialogHint
             )
-            self.resize(
-                self.width(), self.normal_size.height()
-            )  # TODO: Height doesn't work as expected
-
-    def mouseDoubleClickEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            self.handle_minimize()
-
-        event.accept()
-
-    # NECESSARY to override the minimize/maximize button
-    # def changeEvent(self, event):
-    #     if event.type() == QEvent.WindowStateChange:
-    #         if self.windowState():
-    #             self.handle_minimize()
-
-    #     event.accept()
-
-    # def mousePressEvent(self, event):
-    #     if event.button() == Qt.LeftButton:
-    #         self.is_dragging = True
-    #         self.drag_start_pos = event.globalPos()  # Position initiale de la souris
-
-    #     event.accept()
-
-    # def mouseMoveEvent(self, event):
-    #     if self.is_dragging:
-    #         # Déplacer la fenêtre sans changer l'état de la taille
-    #         delta = event.globalPos() - self.drag_start_pos
-    #         self.move(self.pos() + delta)
-    #         self.drag_start_pos = (
-    #             event.globalPos()
-    #         )  # Mettre à jour la position de départ
-
-    #     event.accept()
-
-    # def mouseReleaseEvent(self, event):
-    #     if event.button() == Qt.LeftButton:
-    #         self.is_dragging = False
-
-    #     event.accept()
-
-    # def showMinimized(self):
-    #     print("showMinimized")
-    #     self.is_collapsed = True
-    #     self.setWindowFlags(
-    #         Qt.WindowCloseButtonHint
-    #         | Qt.WindowMaximizeButtonHint
-    #         | Qt.WindowStaysOnTopHint
-    #         | Qt.MSWindowsFixedSizeDialogHint
-    #     )
-    #     self.resize(self.width(), self.title_bar_height)
-    #     super().showMinimized()
-
-    # def showNormal(self):
-    #     print("showNormal")
-    #     self.is_collapsed = False
-    #     self.setWindowFlags(
-    #         Qt.WindowCloseButtonHint
-    #         | Qt.WindowMinimizeButtonHint
-    #         | Qt.WindowStaysOnTopHint
-    #         | Qt.MSWindowsFixedSizeDialogHint
-    #     )
-    #     super().showNormal()
+            self.setFixedHeight(self.normal_height + self.title_bar_height)

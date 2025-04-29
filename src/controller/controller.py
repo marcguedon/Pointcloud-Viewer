@@ -63,88 +63,13 @@ class Controller(QObject):
             self.theme = "white"
 
         self.change_theme_signal.emit(self.theme)
+        # TODO: Add a notification for theme change ?
 
     def show_hide_axes(self):
         self.show_hide_axes_signal.emit()
+        # TODO: Add a notification for axes visibility change ?
 
     # POINTCLOUDS
-    def rename_pointcloud(self, pointcloud: Pointcloud, new_name: str):
-        if new_name != pointcloud.name:
-            if self.is_pointcloud_name_available(new_name):
-                self.notify(
-                    Log.SUCCESS, f"Pointcloud renamed: {pointcloud.name} -> {new_name}"
-                )
-                pointcloud.name = new_name
-                return True
-
-            else:
-                self.notify(Log.WARNING, f"Pointcloud name already exists: {new_name}")
-                return False
-
-        else:
-            self.notify(Log.INFO, "Pointcloud name unchanged")
-            return False
-
-    def is_pointcloud_name_available(self, name):
-        return all(pointcloud.name != name for pointcloud in self.pointclouds_list)
-
-    # FILTERS
-    def add_filter(
-        self,
-        name: str,
-        bounds: tuple[float, float, float, float, float, float],
-        color: str,
-    ) -> Filter:
-        name = self.filter_srv.get_filter_name_from_str(self.filters_list, name)
-
-        filter = Filter(name, bounds, color)
-        self.filters_list.append(filter)
-
-        self.add_filter_signal.emit(filter)
-
-        self.notify(Log.SUCCESS, f"Filter added: {filter.name}")
-
-    def delete_filter(self, filter: Filter):
-        try:
-            self.filters_list.remove(filter)
-            self.delete_filter_signal.emit(filter)
-        except ValueError:
-            self.notify(Log.ERROR, f"Filter not found: {filter.name}")
-
-    def edit_filter(self, filter: Filter):
-        self.edit_filter_signal.emit(filter)
-
-    def rename_filter(self, filter: Filter, new_name: str):
-        if new_name != filter.name:
-            if self.is_filter_name_available(new_name):
-                self.notify(Log.SUCCESS, f"Filter renamed: {filter.name} -> {new_name}")
-                filter.name = new_name
-                self.update_filter_signal.emit(filter)
-                return True
-
-            else:
-                self.notify(Log.WARNING, f"Filter name already exists: {new_name}")
-
-        else:
-            self.notify(Log.INFO, "Filter name unchanged")
-
-        return False
-
-    def is_filter_name_available(self, name):
-        return all(filter.name != name for filter in self.filters_list)
-
-    def set_filter_bounds(
-        self, filter: Filter, bounds: tuple[float, float, float, float, float, float]
-    ):
-        filter.box = bounds
-        self.update_filter_signal.emit(filter)
-
-    def set_filter_color(self, filter: Filter, color: str):
-        filter.color = color
-        self.update_filter_signal.emit(filter)
-
-    # POINTCLOUDS #
-    # Pointcloud management
     def load_pointcloud(self):
         file_path, _ = QFileDialog.getOpenFileName(
             caption="Load pointcloud",
@@ -181,10 +106,12 @@ class Controller(QObject):
         try:
             self.pointclouds_list.remove(pointcloud_to_delete)
             self.delete_pointcloud_signal.emit(pointcloud_to_delete)
+            self.notify_signal.emit(
+                Log.SUCCESS, f"Pointcloud removed: {pointcloud_to_delete.name}"
+            )
         except ValueError:
             self.notify(Log.ERROR, f"Pointcloud not found: {pointcloud_to_delete.name}")
 
-    # Pointcloud visibility toggle
     def toggle_pointcloud_visibility(self, pointcloud: Pointcloud, is_visible: bool):
         self.toggle_pointcloud_visibility_signal.emit(pointcloud, is_visible)
 
@@ -193,7 +120,52 @@ class Controller(QObject):
             Log.INFO, f"Toggle pointcloud visibility: {state} ({pointcloud.name})"
         )
 
-    # Filter visibility toggle
+    def rename_pointcloud(self, pointcloud: Pointcloud, new_name: str):
+        if new_name != pointcloud.name:
+            if self.is_pointcloud_name_available(new_name):
+                self.notify(
+                    Log.SUCCESS, f"Pointcloud renamed: {pointcloud.name} -> {new_name}"
+                )
+                pointcloud.name = new_name
+                return True
+
+            else:
+                self.notify(Log.WARNING, f"Pointcloud name already exists: {new_name}")
+                return False
+
+        else:
+            self.notify(Log.INFO, "Pointcloud name unchanged")
+            return False
+
+    def is_pointcloud_name_available(self, name):
+        return all(pointcloud.name != name for pointcloud in self.pointclouds_list)
+
+    # FILTERS
+    def add_filter(
+        self,
+        name: str,
+        bounds: tuple[float, float, float, float, float, float],
+        color: str,
+    ) -> Filter:
+        name = self.filter_srv.get_filter_name_from_str(self.filters_list, name)
+
+        filter = Filter(name, bounds, color)
+        self.filters_list.append(filter)
+
+        self.add_filter_signal.emit(filter)
+
+        self.notify(Log.SUCCESS, f"Filter added: {filter.name}")
+
+    def delete_filter(self, filter_to_delete: Filter):
+        try:
+            self.filters_list.remove(filter_to_delete)
+            self.delete_filter_signal.emit(filter_to_delete)
+            self.notify_signal.emit(
+                Log.SUCCESS, f"Filter removed: {filter_to_delete.name}"
+            )
+        except ValueError:
+            self.notify(Log.ERROR, f"Filter not found: {filter_to_delete.name}")
+
     def toggle_filter_visibility(self, filter: Filter, is_visible: bool):
         self.toggle_filter_visibility_signal.emit(filter, is_visible)
 
@@ -201,6 +173,40 @@ class Controller(QObject):
         self.notify_signal.emit(
             Log.INFO, f"Toggle filter visibility: {state} ({filter.name})"
         )
+
+    def rename_filter(self, filter: Filter, new_name: str):
+        if new_name != filter.name:
+            if self.is_filter_name_available(new_name):
+                self.notify(Log.SUCCESS, f"Filter renamed: {filter.name} -> {new_name}")
+                filter.name = new_name
+                self.update_filter_signal.emit(filter)
+                return True
+
+            else:
+                self.notify(Log.WARNING, f"Filter name already exists: {new_name}")
+
+        else:
+            self.notify(Log.INFO, "Filter name unchanged")
+
+        return False
+
+    def is_filter_name_available(self, name):
+        return all(filter.name != name for filter in self.filters_list)
+
+    def edit_filter(self, filter: Filter):
+        self.edit_filter_signal.emit(filter)
+
+    def set_filter_bounds(
+        self, filter: Filter, bounds: tuple[float, float, float, float, float, float]
+    ):
+        filter.box = bounds
+        self.update_filter_signal.emit(filter)
+        # TODO: Add a notification for bounds change ?
+
+    def set_filter_color(self, filter: Filter, color: str):
+        filter.color = color
+        self.update_filter_signal.emit(filter)
+        # TODO: Add a notification for color change ?
 
     def import_filter(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -242,7 +248,6 @@ class Controller(QObject):
             self.notify_signal.emit(Log.INFO, "No filters to export")
             return
 
-        # dialog = QFileDialog(self.main_window, "Export filters")
         dialog = QFileDialog(caption="Export filters")
         dialog.setAcceptMode(QFileDialog.AcceptSave)
         dialog.setNameFilters(["YAML files (*.yaml *.yml)", "All files (*)"])

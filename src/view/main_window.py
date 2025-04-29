@@ -28,15 +28,12 @@ class MainWindow(QMainWindow):
         sub_main_layout = QHBoxLayout()
         main_layout.addLayout(sub_main_layout)
 
-        # Control layout for pointclouds and filters
         self.control_layout = ControlLayout()
         sub_main_layout.addLayout(self.control_layout)
 
-        # Viewer layout for displaying pointclouds, filters and windows
         self.viewer_area = ViewerArea()
         sub_main_layout.addWidget(self.viewer_area, stretch=1)
 
-        # Info label to show messages
         self.info_label = QLabel("")
         self.info_label.setObjectName("info_label")
         main_layout.addWidget(self.info_label)

@@ -48,8 +48,9 @@ class FiltersLayout(QVBoxLayout):
         self.addWidget(self.filters_tree)
 
     def on_add_filter_button_clicked(self):
+        # Default filters values
         filter_name = "filter"
-        filter_bounds = (0.0, 1.0, 0.0, 1.0, 0.0, 1.0)  # Default bounds
+        filter_bounds = (0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
         filter_color = "black"
 
         self.controller.add_filter(filter_name, filter_bounds, filter_color)

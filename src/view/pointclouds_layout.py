@@ -19,7 +19,6 @@ class PointcloudsLayout(QVBoxLayout):
     def create_ui(self):
         self.setSpacing(5)
 
-        # Pointclouds
         load_pointcloud_btn = QPushButton("Load pointcloud")
         load_pointcloud_btn.setToolTip("Load pointcloud")
         load_pointcloud_btn.setCursor(QCursor(Qt.PointingHandCursor))

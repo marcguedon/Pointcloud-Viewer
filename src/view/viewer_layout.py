@@ -46,7 +46,7 @@ class ViewerLayout(QVBoxLayout):
         # self.add_origin_axes(line_width=0.5)
         self.addWidget(self.plotter.interactor)
 
-    # POINTCLOUDS #
+    # POINTCLOUDS
     def add_pointcloud(self, pointcloud: Pointcloud):
         self.pointclouds_list.append(pointcloud)
         self.update_viewer()
@@ -67,7 +67,7 @@ class ViewerLayout(QVBoxLayout):
         else:
             self.remove_pointcloud(pointcloud)
 
-    # FILTERS #
+    # FILTERS
     def add_filter(self, filter: Filter):
         self.filters_list.append(filter)
         self.update_viewer()
@@ -88,7 +88,7 @@ class ViewerLayout(QVBoxLayout):
         else:
             self.remove_filter(filter)
 
-    # UTILITY #
+    # UTILITY
     def show_hide_axes(self):
         self.show_axes = not self.show_axes
 

@@ -25,11 +25,9 @@ class ControlLayout(QVBoxLayout):
         separator.setFrameShadow(QFrame.Sunken)
         self.addWidget(separator)
 
-        # Filters
         filters_layout = FiltersLayout()
         self.addLayout(filters_layout)
 
-        # Quit button
         quit_btn = QPushButton("Quit")
         quit_btn.setToolTip("Quit application")
         quit_btn.setCursor(QCursor(Qt.PointingHandCursor))
