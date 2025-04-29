@@ -15,6 +15,9 @@ class Controller(QObject):
     close_application_signal = pyqtSignal()
     change_theme_signal = pyqtSignal(str)
     show_hide_axes_signal = pyqtSignal()
+    open_socket_window_signal = pyqtSignal()
+    start_socket_signal = pyqtSignal(int)
+    stop_socket_signal = pyqtSignal()
 
     add_pointcloud_signal = pyqtSignal(Pointcloud)
     delete_pointcloud_signal = pyqtSignal(Pointcloud)
@@ -69,6 +72,20 @@ class Controller(QObject):
         self.show_hide_axes_signal.emit()
         # TODO: Add a notification for axes visibility change ?
 
+    def open_socket_window(self):
+        self.open_socket_window_signal.emit()
+
+    def start_socket(self, port: int):
+        if not (0 <= port <= 65535):
+            raise ValueError(f"Invalid port number: {port}")
+
+        self.start_socket_signal.emit(port)
+        self.notify(Log.SUCCESS, f"Starting socket on port: {port}")
+
+    def stop_socket(self):
+        self.stop_socket_signal.emit()
+        self.notify(Log.SUCCESS, "Stopping socket")
+
     # POINTCLOUDS
     def load_pointcloud(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -106,9 +123,7 @@ class Controller(QObject):
         try:
             self.pointclouds_list.remove(pointcloud_to_delete)
             self.delete_pointcloud_signal.emit(pointcloud_to_delete)
-            self.notify_signal.emit(
-                Log.SUCCESS, f"Pointcloud removed: {pointcloud_to_delete.name}"
-            )
+            self.notify(Log.SUCCESS, f"Pointcloud removed: {pointcloud_to_delete.name}")
         except ValueError:
             self.notify(Log.ERROR, f"Pointcloud not found: {pointcloud_to_delete.name}")
 
@@ -116,7 +131,7 @@ class Controller(QObject):
         self.toggle_pointcloud_visibility_signal.emit(pointcloud, is_visible)
 
         state = "shown" if is_visible else "hidden"
-        self.notify_signal.emit(
+        self.notify(
             Log.INFO, f"Toggle pointcloud visibility: {state} ({pointcloud.name})"
         )
 
@@ -160,9 +175,7 @@ class Controller(QObject):
         try:
             self.filters_list.remove(filter_to_delete)
             self.delete_filter_signal.emit(filter_to_delete)
-            self.notify_signal.emit(
-                Log.SUCCESS, f"Filter removed: {filter_to_delete.name}"
-            )
+            self.notify(Log.SUCCESS, f"Filter removed: {filter_to_delete.name}")
         except ValueError:
             self.notify(Log.ERROR, f"Filter not found: {filter_to_delete.name}")
 
@@ -170,9 +183,7 @@ class Controller(QObject):
         self.toggle_filter_visibility_signal.emit(filter, is_visible)
 
         state = "shown" if is_visible else "hidden"
-        self.notify_signal.emit(
-            Log.INFO, f"Toggle filter visibility: {state} ({filter.name})"
-        )
+        self.notify(Log.INFO, f"Toggle filter visibility: {state} ({filter.name})")
 
     def rename_filter(self, filter: Filter, new_name: str):
         if new_name != filter.name:
@@ -216,14 +227,14 @@ class Controller(QObject):
         )
 
         if not file_path:
-            self.notify_signal.emit(Log.INFO, "No file selected")
+            self.notify(Log.INFO, "No file selected")
             return
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
         if not file_path.endswith((".yaml", ".yml")):
-            self.notify_signal.emit(
+            self.notify(
                 Log.WARNING, "Invalid file format. Only YAML files are supported."
             )
             return
@@ -237,7 +248,7 @@ class Controller(QObject):
 
             self.add_filter(filter_name, bounds, filter_color)
 
-        self.notify_signal.emit(
+        self.notify(
             Log.SUCCESS,
             f"Filters imported successfully: {os.path.basename(file_path)}",
         )
@@ -245,7 +256,7 @@ class Controller(QObject):
     def export_filter(self):
 
         if not self.filters_list:
-            self.notify_signal.emit(Log.INFO, "No filters to export")
+            self.notify(Log.INFO, "No filters to export")
             return
 
         dialog = QFileDialog(caption="Export filters")
@@ -273,7 +284,7 @@ class Controller(QObject):
                     defaultButton=QMessageBox.No,
                 )
                 if reply != QMessageBox.Yes:
-                    self.notify_signal.emit(Log.INFO, "Export cancelled")
+                    self.notify(Log.INFO, "Export cancelled")
                     return
 
             filters_dict = {
@@ -289,7 +300,7 @@ class Controller(QObject):
             with open(file_path, "w", encoding="UTF-8") as file:
                 yaml.dump(filters_dict, file)
 
-            self.notify_signal.emit(
+            self.notify(
                 Log.SUCCESS,
                 f"Filters exported successfully: {os.path.basename(file_path)}",
             )

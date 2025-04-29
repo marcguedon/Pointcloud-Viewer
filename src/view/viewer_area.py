@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from controller.controller import Controller
 from view.viewer_layout import ViewerLayout
 from view.edit_filter_window import EditFilterWindow
+from view.socket_window import SocketWindow
 from model.filter import Filter
 
 
@@ -13,6 +14,7 @@ class ViewerArea(QMdiArea):
         self.controller = Controller()
         self.controller.edit_filter_signal.connect(self.show_edit_filter_window)
         self.controller.delete_filter_signal.connect(self.close_edit_filter_window)
+        self.controller.open_socket_window_signal.connect(self.open_socket_window)
 
         self.setViewMode(QMdiArea.SubWindowView)
         self.setOption(QMdiArea.DontMaximizeSubWindowOnActivation, True)
@@ -33,6 +35,7 @@ class ViewerArea(QMdiArea):
         self.viewer_subwindow.showMaximized()
 
         self.edit_filter_window = None
+        self.socket_window = None
 
     def show_edit_filter_window(self, filter: Filter):
         if self.edit_filter_window is None:
@@ -51,3 +54,12 @@ class ViewerArea(QMdiArea):
             if self.edit_filter_window.current_filter == filter:
                 self.edit_filter_window.close()
                 self.edit_filter_window = None
+
+    def open_socket_window(self):
+        if self.socket_window is None:
+            self.socket_window = SocketWindow()
+            self.addSubWindow(self.socket_window)
+            self.socket_window.show()
+        else:
+            self.socket_window.setFocus()
+            self.socket_window.raise_()

@@ -65,9 +65,7 @@ class EditFilterWindow(QMdiSubWindow):
         for i, (bound_label, value) in enumerate(zip(labels, bounds)):
             spin = QDoubleSpinBox()
             spin.setFixedHeight(20)
-            font = spin.font()
-            font.setPointSize(8)
-            spin.setFont(font)
+            spin.setFont(QFont("Arial", 10))
             spin.setToolTip(f"Enter {bound_label.lower()} coordinate")
             spin.setRange(-1000, 1000)
             spin.setDecimals(2)

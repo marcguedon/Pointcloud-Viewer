@@ -1,4 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QMenuBar
+from PyQt5.QtWidgets import (
+    QWidget,
+    QMainWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QMenuBar,
+    QAction,
+)
 from controller.controller import Controller
 from view.control_layout import ControlLayout
 from view.viewer_area import ViewerArea
@@ -46,6 +54,9 @@ class MainWindow(QMainWindow):
 
         file_menu = menu_bar.addMenu("&Data")
         file_menu.addAction("Load pointcloud", self.controller.load_pointcloud)
+        file_menu.addAction("Open socket window", self.controller.open_socket_window)
+        file_menu.addSeparator()
+        file_menu.addAction("Add Filter", self.controller.add_filter)
         file_menu.addSeparator()
         file_menu.addAction("Quit", self.controller.close_application)
 
@@ -56,7 +67,12 @@ class MainWindow(QMainWindow):
 
         view_menu = menu_bar.addMenu("&View")
         view_menu.addAction("Change theme", self.controller.change_theme)
-        view_menu.addAction("Show/hide axes", self.controller.show_hide_axes)
+
+        toggle_axes_action = QAction("Show/hide axes", self)
+        toggle_axes_action.setCheckable(True)
+        toggle_axes_action.setChecked(False)
+        toggle_axes_action.toggled.connect(self.controller.show_hide_axes)
+        view_menu.addAction(toggle_axes_action)
 
     def on_notify_signal(self, log: Log, message: str):
         if log == Log.SUCCESS:

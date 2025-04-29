@@ -30,7 +30,7 @@ class ViewerLayout(QVBoxLayout):
 
         self.controller.update_filter_signal.connect(self.update_viewer)
 
-        self.show_axes = True
+        self.show_axes = False
 
         self.pointclouds_list: list[Pointcloud] = []
         self.filters_list: list[Filter] = []
