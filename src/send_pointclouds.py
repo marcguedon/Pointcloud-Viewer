@@ -6,11 +6,11 @@ from generate_pointcloud import generate_random_pointcloud
 
 def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect(("localhost", 12345))
+    client.connect(("localhost", 8080))
 
     try:
         while True:
-            pointcloud, _ = generate_random_pointcloud(50, False)
+            pointcloud, _ = generate_random_pointcloud(100, False)
 
             bytes_pointcloud = pointcloud.astype(np.float32).tobytes()
 

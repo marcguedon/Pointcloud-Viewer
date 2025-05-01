@@ -22,7 +22,7 @@ class EditFilterWindow(QMdiSubWindow):
     def __init__(self, filter: Filter):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
         self.controller.update_filter_signal.connect(
             lambda filter: self.setWindowTitle(f"Edit Filter: {filter.name}")
         )

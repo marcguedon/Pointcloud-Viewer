@@ -1,11 +1,10 @@
 import sys
 import os
 import matplotlib
+from PyQt5.QtWidgets import QApplication
+from view.main_window import MainWindow
 
 matplotlib.use("Agg")
-from view.main_window import MainWindow
-from PyQt5.QtWidgets import QApplication
-
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/usr/lib/qt/plugins"
 
 

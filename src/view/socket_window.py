@@ -8,20 +8,24 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
 )
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QFont
 from controller.controller import Controller
+from controller.socket import Socket
 
 DEFAULT_PORT = 8080
 
 
 class SocketWindow(QMdiSubWindow):
+    closed = pyqtSignal()
+
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
+        self.socket = Socket()
 
-        self.is_collapsed = False
+        self.is_collapsed: bool = False
         self.title_bar_height = self.style().pixelMetric(QStyle.PM_TitleBarHeight)
 
         self.setWindowTitle("Socket")
@@ -33,7 +37,7 @@ class SocketWindow(QMdiSubWindow):
         )
         self.setAttribute(Qt.WA_DeleteOnClose, True)
 
-        self.normal_size = None
+        self.normal_size: bool = None
         self.create_ui()
 
     def create_ui(self):
@@ -81,6 +85,16 @@ class SocketWindow(QMdiSubWindow):
         main_layout.addLayout(button_layout)
 
         self.normal_height = self.sizeHint().height()
+
+        if self.socket.is_running:
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+            self.port_edit.setEnabled(False)
+            self.port_edit.setText(str(self.socket.port))
+
+    def closeEvent(self, event):
+        self.closed.emit()
+        super().closeEvent(event)
 
     def mouseDoubleClickEvent(self, event):
         if event.buttons() == Qt.LeftButton:

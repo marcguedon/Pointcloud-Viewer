@@ -1,18 +1,18 @@
 from dataclasses import dataclass
-from pyvista import DataSet
+from pyvista import PolyData
 
 
 @dataclass
 class Pointcloud:
     _name: str
-    _points: DataSet
+    _points: PolyData
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def points(self) -> DataSet:
+    def points(self) -> PolyData:
         return self._points
 
     @name.setter
@@ -20,5 +20,5 @@ class Pointcloud:
         self._name = name
 
     @points.setter
-    def points(self, points: DataSet):
+    def points(self, points: PolyData):
         self._points = points

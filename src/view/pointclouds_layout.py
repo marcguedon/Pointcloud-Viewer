@@ -10,7 +10,7 @@ class PointcloudsLayout(QVBoxLayout):
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
         self.controller.add_pointcloud_signal.connect(self.add_pointcloud)
         self.controller.delete_pointcloud_signal.connect(self.remove_pointcloud_item)
 

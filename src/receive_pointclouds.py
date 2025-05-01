@@ -18,7 +18,7 @@ def receive_data(conn, size):
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("localhost", 12345))
+    server.bind(("localhost", 8080))
     server.listen(1)
 
     print("Waiting for a connection...")

@@ -10,7 +10,7 @@ class ControlLayout(QVBoxLayout):
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
 
         self.create_ui()
 

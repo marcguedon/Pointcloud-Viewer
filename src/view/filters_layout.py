@@ -16,7 +16,7 @@ class FiltersLayout(QVBoxLayout):
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
         self.controller.add_filter_signal.connect(self.add_filter)
         self.controller.delete_filter_signal.connect(self.remove_filter_item)
 

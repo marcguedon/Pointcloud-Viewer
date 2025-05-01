@@ -75,13 +75,5 @@ class MainWindow(QMainWindow):
         view_menu.addAction(toggle_axes_action)
 
     def on_notify_signal(self, log: Log, message: str):
-        if log == Log.SUCCESS:
-            self.info_label.setStyleSheet("color: green;")
-        elif log == Log.INFO:
-            self.info_label.setStyleSheet("color: black;")
-        elif log == Log.WARNING:
-            self.info_label.setStyleSheet("color: orange;")
-        elif log == Log.ERROR:
-            self.info_label.setStyleSheet("color: red;")
-
+        self.info_label.setStyleSheet(f"color: {log.value};")
         self.info_label.setText(message)

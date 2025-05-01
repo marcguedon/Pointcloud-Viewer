@@ -1,5 +1,6 @@
 import os
 import yaml
+import pyvista as pv
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
 from controller.pointcloud_service import PointcloudService
@@ -7,16 +8,19 @@ from controller.filter_service import FilterService
 from model.pointcloud import Pointcloud
 from model.filter import Filter
 from utils.log import Log
+from utils.theme import Theme
 
 
 class Controller(QObject):
     _instance = None
+
     notify_signal = pyqtSignal(Log, str)
     close_application_signal = pyqtSignal()
-    change_theme_signal = pyqtSignal(str)
+    change_theme_signal = pyqtSignal(Theme)
     show_hide_axes_signal = pyqtSignal()
     open_socket_window_signal = pyqtSignal()
     start_socket_signal = pyqtSignal(int)
+    update_socket_pointcloud_signal = pyqtSignal(pv.PolyData)
     stop_socket_signal = pyqtSignal()
 
     add_pointcloud_signal = pyqtSignal(Pointcloud)
@@ -27,7 +31,6 @@ class Controller(QObject):
     delete_filter_signal = pyqtSignal(Filter)
     toggle_filter_visibility_signal = pyqtSignal(Filter, bool)
     edit_filter_signal = pyqtSignal(Filter)
-
     update_filter_signal = pyqtSignal(Filter)
 
     def __new__(cls):
@@ -50,7 +53,7 @@ class Controller(QObject):
         self.pointclouds_list: list[Pointcloud] = []
         self.filters_list: list[Filter] = []
 
-        self.theme = "white"
+        self.theme: Theme = Theme.LIGHT_MODE
 
     # APPLICATION
     def notify(self, log: Log, message: str):
@@ -60,18 +63,19 @@ class Controller(QObject):
         self.close_application_signal.emit()
 
     def change_theme(self):
-        if self.theme == "white":
-            self.theme = "black"
+        if self.theme == Theme.LIGHT_MODE:
+            self.theme = Theme.DARK_MODE
         else:
-            self.theme = "white"
+            self.theme = Theme.LIGHT_MODE
 
         self.change_theme_signal.emit(self.theme)
-        # TODO: Add a notification for theme change ?
+        self.notify(Log.INFO, f"Theme changed to: {self.theme}")
 
     def show_hide_axes(self):
         self.show_hide_axes_signal.emit()
-        # TODO: Add a notification for axes visibility change ?
+        self.notify(Log.INFO, "Axes visibility toggled")
 
+    # SOCKET
     def open_socket_window(self):
         self.open_socket_window_signal.emit()
 
@@ -81,6 +85,9 @@ class Controller(QObject):
 
         self.start_socket_signal.emit(port)
         self.notify(Log.SUCCESS, f"Starting socket on port: {port}")
+
+    def update_socket_pointcloud(self, pointcloud: Pointcloud):
+        self.update_socket_pointcloud_signal.emit(pointcloud)
 
     def stop_socket(self):
         self.stop_socket_signal.emit()
@@ -212,12 +219,10 @@ class Controller(QObject):
     ):
         filter.box = bounds
         self.update_filter_signal.emit(filter)
-        # TODO: Add a notification for bounds change ?
 
     def set_filter_color(self, filter: Filter, color: str):
         filter.color = color
         self.update_filter_signal.emit(filter)
-        # TODO: Add a notification for color change ?
 
     def import_filter(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -235,7 +240,7 @@ class Controller(QObject):
 
         if not file_path.endswith((".yaml", ".yml")):
             self.notify(
-                Log.WARNING, "Invalid file format. Only YAML files are supported."
+                Log.WARNING, "Invalid file format. Only YAML files are supported"
             )
             return
 

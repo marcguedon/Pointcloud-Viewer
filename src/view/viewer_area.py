@@ -11,7 +11,7 @@ class ViewerArea(QMdiArea):
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.controller: Controller = Controller()
         self.controller.edit_filter_signal.connect(self.show_edit_filter_window)
         self.controller.delete_filter_signal.connect(self.close_edit_filter_window)
         self.controller.open_socket_window_signal.connect(self.open_socket_window)
@@ -34,8 +34,8 @@ class ViewerArea(QMdiArea):
 
         self.viewer_subwindow.showMaximized()
 
-        self.edit_filter_window = None
-        self.socket_window = None
+        self.edit_filter_window: EditFilterWindow = None
+        self.socket_window: SocketWindow = None
 
     def show_edit_filter_window(self, filter: Filter):
         if self.edit_filter_window is None:
@@ -58,8 +58,14 @@ class ViewerArea(QMdiArea):
     def open_socket_window(self):
         if self.socket_window is None:
             self.socket_window = SocketWindow()
+            self.socket_window.closed.connect(self.close_socket_window)
             self.addSubWindow(self.socket_window)
             self.socket_window.show()
         else:
             self.socket_window.setFocus()
             self.socket_window.raise_()
+
+    def close_socket_window(self):
+        if self.socket_window is not None:
+            self.socket_window.close()
+            self.socket_window = None

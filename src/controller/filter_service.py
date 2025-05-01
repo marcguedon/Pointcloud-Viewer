@@ -1,8 +1,11 @@
+from model.filter import Filter
+
+
 class FilterService:
     def __init__(self):
         pass
 
-    def get_filter_name_from_str(self, filters_list, name):
+    def get_filter_name_from_str(self, filters_list: list[Filter], name: str) -> str:
         existing_names = {filter.name for filter in filters_list}
         original_name = name
         count = 1
