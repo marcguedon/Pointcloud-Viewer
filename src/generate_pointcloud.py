@@ -29,8 +29,9 @@ def pointcloud_to_open3d_pointcloud(
 
 def main(filename: str, nb_points: int = 1000, colors: bool = False):
     pointcloud, colors = generate_random_pointcloud(nb_points, colors)
+    # np.save(filename, pointcloud)
+    
     poincloud_object = pointcloud_to_open3d_pointcloud(pointcloud, colors)
-
     o3d.io.write_point_cloud(filename, poincloud_object)
 
 

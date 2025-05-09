@@ -12,6 +12,7 @@ from PyQt5.QtCore import Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QFont
 from controller.controller import Controller
 from controller.socket import Socket
+from utils.log import Log
 
 DEFAULT_PORT = 8080
 
@@ -134,10 +135,16 @@ class SocketWindow(QMdiSubWindow):
         port = self.port_edit.text()
 
         if not port:
-            port = DEFAULT_PORT
+            port = int(DEFAULT_PORT)
 
         else:
             port = int(port)
+
+            if port > 65535:
+                self.controller.notify(
+                    Log.ERROR, "Port number must be between 0 and 65535"
+                )
+                return
 
         self.port_edit.setText(str(port))
         self.port_edit.setEnabled(False)

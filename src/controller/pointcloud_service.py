@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pyvista as pv
 from model.pointcloud import Pointcloud
 
@@ -10,8 +11,23 @@ class PointcloudService:
     def get_pointcloud_data_from_path(
         self, pointcloud_list: list[Pointcloud], path: str
     ) -> tuple[str, pv.PolyData]:
+        pointcloud_data = None
+
+        if path.endswith((".ply", ".pcd", ".xyz")):
+            pointcloud_data = pv.read(path)
+
+        else:  # ".npy" or ".npz" file format
+            data = np.load(path)
+
+            if data.ndim == 2 and data.shape[1] == 3:
+                pointcloud_data = pv.PolyData(data)
+
+            else:
+                raise ValueError(
+                    f"Invalid data shape: {data.shape}. Expected (N, 3)."
+                )
+
         name = self.get_pointcloud_name_from_path(pointcloud_list, path)
-        pointcloud_data = pv.read(path)
 
         return name, pointcloud_data
 

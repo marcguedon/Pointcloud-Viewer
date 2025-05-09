@@ -18,9 +18,11 @@ class Controller(QObject):
     close_application_signal = pyqtSignal()
     change_theme_signal = pyqtSignal(Theme)
     show_hide_axes_signal = pyqtSignal()
+
     open_socket_window_signal = pyqtSignal()
     start_socket_signal = pyqtSignal(int)
     update_socket_pointcloud_signal = pyqtSignal(pv.PolyData)
+    client_disconnected_signal = pyqtSignal()
     stop_socket_signal = pyqtSignal()
 
     add_pointcloud_signal = pyqtSignal(Pointcloud)
@@ -80,14 +82,15 @@ class Controller(QObject):
         self.open_socket_window_signal.emit()
 
     def start_socket(self, port: int):
-        if not (0 <= port <= 65535):
-            raise ValueError(f"Invalid port number: {port}")
-
         self.start_socket_signal.emit(port)
         self.notify(Log.SUCCESS, f"Starting socket on port: {port}")
 
     def update_socket_pointcloud(self, pointcloud: Pointcloud):
         self.update_socket_pointcloud_signal.emit(pointcloud)
+
+    def client_disconnected(self):
+        self.client_disconnected_signal.emit()
+        self.notify(Log.INFO, "Client disconnected")
 
     def stop_socket(self):
         self.stop_socket_signal.emit()
@@ -98,7 +101,7 @@ class Controller(QObject):
         file_path, _ = QFileDialog.getOpenFileName(
             caption="Load pointcloud",
             directory="",
-            filter="Pointcloud file (*.ply *.pcd *.xyz);;All files (*)",
+            filter="Pointcloud files (*.ply *.pcd *.xyz);;Numpy files (*.npy *.npz);;All files (*)",
         )
 
         if not file_path:
@@ -108,13 +111,17 @@ class Controller(QObject):
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        if not file_path.endswith((".ply", ".pcd", ".xyz")):
+        if not file_path.endswith((".ply", ".pcd", ".xyz", ".npy", ".npz")):
             self.notify(Log.WARNING, "Invalid file format")
             return
 
-        name, pointcloud_data = self.pointcloud_srv.get_pointcloud_data_from_path(
-            self.pointclouds_list, file_path
-        )
+        try:
+            name, pointcloud_data = self.pointcloud_srv.get_pointcloud_data_from_path(
+                self.pointclouds_list, file_path
+            )
+        except ValueError as e:
+            self.notify(Log.WARNING, str(e))
+            return
 
         pointcloud = Pointcloud(name, pointcloud_data)
         self.pointclouds_list.append(pointcloud)
@@ -198,6 +205,7 @@ class Controller(QObject):
                 self.notify(Log.SUCCESS, f"Filter renamed: {filter.name} -> {new_name}")
                 filter.name = new_name
                 self.update_filter_signal.emit(filter)
+
                 return True
 
             else:

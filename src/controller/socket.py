@@ -42,9 +42,10 @@ class Socket:
         self.socket_thread = Thread(target=self.run_socket, daemon=True)
         self.socket_thread.start()
 
-    def stop_socket(self):
-        self.is_running = False
-        self.conn.close()
+    def open_connection(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind(("localhost", self.port))
+        self.server.listen(1)
 
     def run_socket(self):
         while self.is_running:
@@ -69,11 +70,6 @@ class Socket:
                 pointcloud_object = pv.PolyData(pointcloud_data)
                 self.controller.update_socket_pointcloud_signal.emit(pointcloud_object)
 
-    def open_connection(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind(("localhost", self.port))
-        self.server.listen(1)
-
     def receive_data(self, size):
         data = b""
 
@@ -89,8 +85,11 @@ class Socket:
             except socket.error:
                 self.connected = False
                 self.conn.close()
-                self.controller.notify(Log.INFO, "Client disconnected")
-                # TODO: Did we keep last pointcloud ?
+                self.controller.client_disconnected()
                 break
 
         return data
+
+    def stop_socket(self):
+        self.is_running = False
+        self.conn.close()

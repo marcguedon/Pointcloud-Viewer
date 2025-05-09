@@ -53,6 +53,7 @@ class ViewerLayout(QVBoxLayout):
         self.controller.update_socket_pointcloud_signal.connect(
             self.update_socket_pointcloud
         )
+        self.controller.client_disconnected_signal.connect(self.remove_stock_pointcloud)
         self.controller.stop_socket_signal.connect(self.remove_stock_pointcloud)
 
         self.controller.add_filter_signal.connect(self.add_filter)
