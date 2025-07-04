@@ -22,7 +22,7 @@ class PointcloudsLayout(QVBoxLayout):
         load_pointcloud_btn = QPushButton("Load pointcloud")
         load_pointcloud_btn.setToolTip("Load pointcloud")
         load_pointcloud_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        load_pointcloud_btn.clicked.connect(self.controller.load_pointcloud)
+        load_pointcloud_btn.clicked.connect(self.controller.load_pointclouds)
         self.addWidget(load_pointcloud_btn)
 
         self.pointclouds_tree = QTreeWidget()

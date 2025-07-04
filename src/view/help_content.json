@@ -1,0 +1,28 @@
+{
+    "Application": {
+        "Application": ""
+    },
+    "Pointclouds": {
+        "Pointclouds": "Test Pointclouds",
+        "Add pointclouds": "<p>To add a pointcloud, click on 'Load pointcloud' button and choose a pointcloud file. It is also possible to open the 'Data' menu and click on 'Load pointclouds'.</p>",
+        "Show/hide pointcloud": "<p>To show/hide a pointcloud, click on the checkbox of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Toggle visibility'.</p>",
+        "Rename pointcloud": "<p>To rename a pointcloud, double click on the label of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Rename'.</p>",
+        "Delete pointcloud": "<p>To delete a pointcloud, click on the delete button of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Delete'.</p>"
+    },
+    "Filters": {
+        "Filters": "Test Filters",
+        "Add filters": "<h2>How to add filters</h2><h3>'Add filter' buttons</h3><p>To add a filter, click on the 'Add filter' button.</p><p>A 'Add filter' button is also available in the 'Data' menu.</p><h3>'Import filters' button</h3><p>It is also possible to import filters, by clicking on the 'Import filters' button.</p>",
+        "Show/hide filter": "<h2>How to show/hide a filter</h2><p></p>",
+        "Rename filter": "Test Rename filter",
+        "Change filter color": "Test Change filter color",
+        "Change filter bounds": "Test Change filter bounds",
+        "Export filters": "Test Export filters",
+        "Delete filter": "Test Delete filter"
+    },
+    "Socket": {
+        "Socket": "Test Socket",
+        "Start socket": "Test Start socket",
+        "Pause socket": "Test Pause socket",
+        "Stop socket": "Test Stop socket"
+    }
+}

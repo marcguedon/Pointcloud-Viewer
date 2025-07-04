@@ -1,8 +1,8 @@
 import numpy as np
 import pyvista as pv
-from pyvistaqt import QtInteractor
 from PyQt5.QtWidgets import QVBoxLayout
 from controller.controller import Controller
+from view.pointclouds_interactor import PointcloudsInteractor
 from model.filter import Filter
 from model.pointcloud import Pointcloud
 from utils.log import Log
@@ -54,6 +54,9 @@ class ViewerLayout(QVBoxLayout):
             self.update_socket_pointcloud
         )
         self.controller.client_disconnected_signal.connect(self.remove_stock_pointcloud)
+        self.controller.start_socket_signal.connect(
+            lambda port, persistence: self.set_socket_persistence(persistence)
+        )
         self.controller.stop_socket_signal.connect(self.remove_stock_pointcloud)
 
         self.controller.add_filter_signal.connect(self.add_filter)
@@ -68,14 +71,16 @@ class ViewerLayout(QVBoxLayout):
 
         self.pointclouds_list: list[Pointcloud] = []
         self.filters_list: list[Filter] = []
-        self.socket_pointcloud: pv.PolyData = None
+
+        self.socket_pointclouds: list[pv.PolyData] = []
+        self.persistence = None
 
         self.create_ui()
 
     def create_ui(self):
         self.setContentsMargins(0, 0, 0, 0)
 
-        self.plotter = QtInteractor()
+        self.plotter = PointcloudsInteractor()
         self.plotter.set_background("white")
         self.plotter.add_axes()
         # self.add_origin_axes(line_width=0.5)
@@ -162,8 +167,7 @@ class ViewerLayout(QVBoxLayout):
             pointcloud.points for pointcloud in self.pointclouds_list
         ]
 
-        if self.socket_pointcloud is not None:
-            pointclouds_list.append(self.socket_pointcloud)
+        pointclouds_list.extend(self.socket_pointclouds)
 
         for pointcloud in pointclouds_list:
             if self.filters_list:
@@ -197,10 +201,15 @@ class ViewerLayout(QVBoxLayout):
         )
 
     def update_socket_pointcloud(self, pointcloud: pv.PolyData):
-        self.socket_pointcloud = pointcloud
+        if len(self.socket_pointclouds) == self.persistence:
+            self.socket_pointclouds.pop(0)
+            
+        self.socket_pointclouds.append(pointcloud) 
         self.update_viewer()
 
+    def set_socket_persistence(self, persistence: int):
+        self.persistence = persistence
+
     def remove_stock_pointcloud(self):
-        if self.socket_pointcloud is not None:
-            self.socket_pointcloud = None
-            self.update_viewer()
+        self.socket_pointclouds.clear()
+        self.update_viewer()

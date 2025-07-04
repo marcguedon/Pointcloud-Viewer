@@ -4,6 +4,7 @@ from controller.controller import Controller
 from view.viewer_layout import ViewerLayout
 from view.edit_filter_window import EditFilterWindow
 from view.socket_window import SocketWindow
+from view.debug_window import DebugWindow
 from model.filter import Filter
 
 
@@ -15,6 +16,7 @@ class ViewerArea(QMdiArea):
         self.controller.edit_filter_signal.connect(self.show_edit_filter_window)
         self.controller.delete_filter_signal.connect(self.close_edit_filter_window)
         self.controller.open_socket_window_signal.connect(self.open_socket_window)
+        self.controller.open_debug_window_signal.connect(self.open_debug_window)
 
         self.setViewMode(QMdiArea.SubWindowView)
         self.setOption(QMdiArea.DontMaximizeSubWindowOnActivation, True)
@@ -36,6 +38,7 @@ class ViewerArea(QMdiArea):
 
         self.edit_filter_window: EditFilterWindow = None
         self.socket_window: SocketWindow = None
+        self.debug_window: DebugWindow = None
 
     def show_edit_filter_window(self, filter: Filter):
         if self.edit_filter_window is None:
@@ -69,3 +72,18 @@ class ViewerArea(QMdiArea):
         if self.socket_window is not None:
             self.socket_window.close()
             self.socket_window = None
+
+    def open_debug_window(self):
+        if self.debug_window is None:
+            self.debug_window = DebugWindow()
+            self.debug_window.closed.connect(self.close_debug_window)
+            self.addSubWindow(self.debug_window)
+            self.debug_window.show()
+        else:
+            self.debug_window.setFocus()
+            self.debug_window.raise_()
+
+    def close_debug_window(self):
+        if self.debug_window is not None:
+            self.debug_window.close()
+            self.debug_window = None

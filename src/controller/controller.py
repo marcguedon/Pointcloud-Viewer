@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
 from controller.pointcloud_service import PointcloudService
 from controller.filter_service import FilterService
+from view.help_window import HelpWindow
 from model.pointcloud import Pointcloud
 from model.filter import Filter
 from utils.log import Log
@@ -20,10 +21,13 @@ class Controller(QObject):
     show_hide_axes_signal = pyqtSignal()
 
     open_socket_window_signal = pyqtSignal()
-    start_socket_signal = pyqtSignal(int)
+    start_socket_signal = pyqtSignal(int, int)
     update_socket_pointcloud_signal = pyqtSignal(pv.PolyData)
     client_disconnected_signal = pyqtSignal()
+    pause_socket_signal = pyqtSignal()
     stop_socket_signal = pyqtSignal()
+
+    open_debug_window_signal = pyqtSignal()
 
     add_pointcloud_signal = pyqtSignal(Pointcloud)
     delete_pointcloud_signal = pyqtSignal(Pointcloud)
@@ -55,6 +59,8 @@ class Controller(QObject):
         self.pointclouds_list: list[Pointcloud] = []
         self.filters_list: list[Filter] = []
 
+        self.help_window = None
+
         self.theme: Theme = Theme.LIGHT_MODE
 
     # APPLICATION
@@ -62,6 +68,9 @@ class Controller(QObject):
         self.notify_signal.emit(log, message)
 
     def close_application(self):
+        if self.help_window is not None:
+            self.help_window.close()
+
         self.close_application_signal.emit()
 
     def change_theme(self):
@@ -77,61 +86,86 @@ class Controller(QObject):
         self.show_hide_axes_signal.emit()
         self.notify(Log.INFO, "Axes visibility toggled")
 
+    def open_help(self):
+        if self.help_window is None:
+            self.help_window = HelpWindow()
+
+        self.help_window.show()
+        self.help_window.raise_()
+
     # SOCKET
     def open_socket_window(self):
         self.open_socket_window_signal.emit()
 
-    def start_socket(self, port: int):
-        self.start_socket_signal.emit(port)
-        self.notify(Log.SUCCESS, f"Starting socket on port: {port}")
+    def start_socket(self, port: int, persistence: int):
+        self.start_socket_signal.emit(port, persistence)
 
     def update_socket_pointcloud(self, pointcloud: Pointcloud):
         self.update_socket_pointcloud_signal.emit(pointcloud)
+        self.notify(
+            Log.DEBUG,
+            f"Pointcloud received from socket: {len(pointcloud.points)} points",
+        )
 
     def client_disconnected(self):
         self.client_disconnected_signal.emit()
         self.notify(Log.INFO, "Client disconnected")
 
+    def pause_socket(self):
+        self.pause_socket_signal.emit()
+        self.notify(Log.SUCCESS, "Pausing socket")
+
     def stop_socket(self):
         self.stop_socket_signal.emit()
         self.notify(Log.SUCCESS, "Stopping socket")
 
+    # DEBUG
+    def open_debug_window(self):
+        self.open_debug_window_signal.emit()
+
     # POINTCLOUDS
-    def load_pointcloud(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            caption="Load pointcloud",
+    def load_pointclouds(self):
+        file_paths, _ = QFileDialog.getOpenFileNames(
+            caption="Load pointclouds",
             directory="",
             filter="Pointcloud files (*.ply *.pcd *.xyz);;Numpy files (*.npy *.npz);;All files (*)",
         )
 
-        if not file_path:
+        if not file_paths:
             self.notify(Log.INFO, "No file selected")
             return
 
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
+        for file_path in file_paths:
+            if not os.path.exists(file_path):
+                self.notify(Log.ERROR, f"File not found: {file_path}")
+                continue
 
-        if not file_path.endswith((".ply", ".pcd", ".xyz", ".npy", ".npz")):
-            self.notify(Log.WARNING, "Invalid file format")
-            return
+            if not file_path.endswith((".ply", ".pcd", ".xyz", ".npy", ".npz")):
+                self.notify(
+                    Log.WARNING,
+                    f"Invalid file format. PLY, PCD, XYZ, NPY and NPZ files are supported ({os.path.basename(file_path)})",
+                )
+                continue
 
-        try:
-            name, pointcloud_data = self.pointcloud_srv.get_pointcloud_data_from_path(
-                self.pointclouds_list, file_path
+            try:
+                name, pointcloud_data = (
+                    self.pointcloud_srv.get_pointcloud_data_from_path(
+                        self.pointclouds_list, file_path
+                    )
+                )
+            except ValueError as e:
+                self.notify(Log.ERROR, f"Error: {str(e)}")
+                continue
+
+            pointcloud = Pointcloud(name, pointcloud_data)
+            self.pointclouds_list.append(pointcloud)
+
+            self.add_pointcloud_signal.emit(pointcloud)
+
+            self.notify(
+                Log.SUCCESS,
+                f"Pointcloud loaded: {pointcloud.name} ({pointcloud.points.n_points} points)",
             )
-        except ValueError as e:
-            self.notify(Log.WARNING, str(e))
-            return
-
-        pointcloud = Pointcloud(name, pointcloud_data)
-        self.pointclouds_list.append(pointcloud)
-
-        self.add_pointcloud_signal.emit(pointcloud)
-
-        self.notify(
-            Log.SUCCESS,
-            f"Pointcloud loaded: {pointcloud.name} ({pointcloud.points.n_points} points)",
-        )
 
     def delete_pointcloud(self, pointcloud_to_delete: Pointcloud):
         try:
@@ -146,7 +180,7 @@ class Controller(QObject):
 
         state = "shown" if is_visible else "hidden"
         self.notify(
-            Log.INFO, f"Toggle pointcloud visibility: {state} ({pointcloud.name})"
+            Log.DEBUG, f"Toggle pointcloud visibility: {state} ({pointcloud.name})"
         )
 
     def rename_pointcloud(self, pointcloud: Pointcloud, new_name: str):
@@ -197,7 +231,7 @@ class Controller(QObject):
         self.toggle_filter_visibility_signal.emit(filter, is_visible)
 
         state = "shown" if is_visible else "hidden"
-        self.notify(Log.INFO, f"Toggle filter visibility: {state} ({filter.name})")
+        self.notify(Log.DEBUG, f"Toggle filter visibility: {state} ({filter.name})")
 
     def rename_filter(self, filter: Filter, new_name: str):
         if new_name != filter.name:
@@ -227,47 +261,51 @@ class Controller(QObject):
     ):
         filter.box = bounds
         self.update_filter_signal.emit(filter)
+        self.notify(Log.DEBUG, f"{filter.name} filter bounds changed to : {bounds}")
 
     def set_filter_color(self, filter: Filter, color: str):
         filter.color = color
         self.update_filter_signal.emit(filter)
+        self.notify(Log.DEBUG, f"{filter.name} filter color changed to : {color}")
 
     def import_filter(self):
-        file_path, _ = QFileDialog.getOpenFileName(
+        file_paths, _ = QFileDialog.getOpenFileNames(
             caption="Import filters",
             directory="",
             filter="YAML files (*.yaml *.yml);;All files (*)",
         )
 
-        if not file_path:
+        if not file_paths:
             self.notify(Log.INFO, "No file selected")
             return
 
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
+        for file_path in file_paths:
+            if not os.path.exists(file_path):
+                self.notify(Log.ERROR, f"File not found: {file_path}")
+                continue
 
-        if not file_path.endswith((".yaml", ".yml")):
+            if not file_path.endswith((".yaml", ".yml")):
+                self.notify(
+                    Log.WARNING,
+                    f"Invalid file format. Only YAML files are supported ({os.path.basename(file_path)})",
+                )
+                continue
+
+            with open(file_path, "r", encoding="UTF-8") as file:
+                filters_dict = yaml.safe_load(file)
+
+            for filter_name, filter_data in filters_dict["filters"].items():
+                bounds = filter_data["bounds"]
+                filter_color = filter_data["color"]
+
+                self.add_filter(filter_name, bounds, filter_color)
+
             self.notify(
-                Log.WARNING, "Invalid file format. Only YAML files are supported"
+                Log.SUCCESS,
+                f"Filters imported successfully: {os.path.basename(file_path)}",
             )
-            return
-
-        with open(file_path, "r", encoding="UTF-8") as file:
-            filters_dict = yaml.safe_load(file)
-
-        for filter_name, filter_data in filters_dict["filters"].items():
-            bounds = filter_data["bounds"]
-            filter_color = filter_data["color"]
-
-            self.add_filter(filter_name, bounds, filter_color)
-
-        self.notify(
-            Log.SUCCESS,
-            f"Filters imported successfully: {os.path.basename(file_path)}",
-        )
 
     def export_filter(self):
-
         if not self.filters_list:
             self.notify(Log.INFO, "No filters to export")
             return

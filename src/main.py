@@ -10,11 +10,12 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/usr/lib/qt/plugins"
 
 
 def main():
-    app = QApplication([])
+    app = QApplication(["pointcloud_viewer"])
+    app.setStyle("Fusion")
 
     window = MainWindow()
-
     window.show()
+
     sys.exit(app.exec())
 
 
