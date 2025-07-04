@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         self.setMenuBar(menu_bar)
 
         file_menu = menu_bar.addMenu("&Data")
-        file_menu.addAction("Load pointclouds", self.controller.load_pointclouds)
+        file_menu.addAction("Load pointclouds", self.controller.load_pointcloud_files)
         file_menu.addAction("Open socket window", self.controller.open_socket_window)
         file_menu.addSeparator()
         file_menu.addAction("Add Filter", self.controller.add_filter)

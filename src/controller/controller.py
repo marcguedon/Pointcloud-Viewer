@@ -124,7 +124,7 @@ class Controller(QObject):
         self.open_debug_window_signal.emit()
 
     # POINTCLOUDS
-    def load_pointclouds(self):
+    def load_pointcloud_files(self):
         file_paths, _ = QFileDialog.getOpenFileNames(
             caption="Load pointclouds",
             directory="",
@@ -136,36 +136,37 @@ class Controller(QObject):
             return
 
         for file_path in file_paths:
-            if not os.path.exists(file_path):
-                self.notify(Log.ERROR, f"File not found: {file_path}")
-                continue
+            self.load_pointcloud(file_path)
 
-            if not file_path.endswith((".ply", ".pcd", ".xyz", ".npy", ".npz")):
-                self.notify(
-                    Log.WARNING,
-                    f"Invalid file format. PLY, PCD, XYZ, NPY and NPZ files are supported ({os.path.basename(file_path)})",
-                )
-                continue
+    def load_pointcloud(self, file_path: str):
+        if not os.path.exists(file_path):
+            self.notify(Log.ERROR, f"File not found: {file_path}")
+            return
 
-            try:
-                name, pointcloud_data = (
-                    self.pointcloud_srv.get_pointcloud_data_from_path(
-                        self.pointclouds_list, file_path
-                    )
-                )
-            except ValueError as e:
-                self.notify(Log.ERROR, f"Error: {str(e)}")
-                continue
-
-            pointcloud = Pointcloud(name, pointcloud_data)
-            self.pointclouds_list.append(pointcloud)
-
-            self.add_pointcloud_signal.emit(pointcloud)
-
+        if not file_path.endswith((".ply", ".pcd", ".xyz", ".npy", ".npz")):
             self.notify(
-                Log.SUCCESS,
-                f"Pointcloud loaded: {pointcloud.name} ({pointcloud.points.n_points} points)",
+                Log.WARNING,
+                f"Invalid file format. PLY, PCD, XYZ, NPY and NPZ files are supported ({os.path.basename(file_path)})",
             )
+            return
+
+        try:
+            name, pointcloud_data = self.pointcloud_srv.get_pointcloud_data_from_path(
+                self.pointclouds_list, file_path
+            )
+        except ValueError as e:
+            self.notify(Log.ERROR, f"Error: {str(e)}")
+            return
+
+        pointcloud = Pointcloud(name, pointcloud_data)
+        self.pointclouds_list.append(pointcloud)
+
+        self.add_pointcloud_signal.emit(pointcloud)
+
+        self.notify(
+            Log.SUCCESS,
+            f"Pointcloud loaded: {pointcloud.name} ({pointcloud.points.n_points} points)",
+        )
 
     def delete_pointcloud(self, pointcloud_to_delete: Pointcloud):
         try:
@@ -200,7 +201,7 @@ class Controller(QObject):
             self.notify(Log.INFO, "Pointcloud name unchanged")
             return False
 
-    def is_pointcloud_name_available(self, name):
+    def is_pointcloud_name_available(self, name: str):
         return all(pointcloud.name != name for pointcloud in self.pointclouds_list)
 
     # FILTERS
@@ -250,7 +251,7 @@ class Controller(QObject):
 
         return False
 
-    def is_filter_name_available(self, name):
+    def is_filter_name_available(self, name: str):
         return all(filter.name != name for filter in self.filters_list)
 
     def edit_filter(self, filter: Filter):
@@ -268,7 +269,7 @@ class Controller(QObject):
         self.update_filter_signal.emit(filter)
         self.notify(Log.DEBUG, f"{filter.name} filter color changed to : {color}")
 
-    def import_filter(self):
+    def import_filters_files(self):
         file_paths, _ = QFileDialog.getOpenFileNames(
             caption="Import filters",
             directory="",
@@ -280,30 +281,33 @@ class Controller(QObject):
             return
 
         for file_path in file_paths:
-            if not os.path.exists(file_path):
-                self.notify(Log.ERROR, f"File not found: {file_path}")
-                continue
+            self.load_filters(file_path)
 
-            if not file_path.endswith((".yaml", ".yml")):
-                self.notify(
-                    Log.WARNING,
-                    f"Invalid file format. Only YAML files are supported ({os.path.basename(file_path)})",
-                )
-                continue
+    def load_filters(self, file_path: str):
+        if not os.path.exists(file_path):
+            self.notify(Log.ERROR, f"File not found: {file_path}")
+            return
 
-            with open(file_path, "r", encoding="UTF-8") as file:
-                filters_dict = yaml.safe_load(file)
-
-            for filter_name, filter_data in filters_dict["filters"].items():
-                bounds = filter_data["bounds"]
-                filter_color = filter_data["color"]
-
-                self.add_filter(filter_name, bounds, filter_color)
-
+        if not file_path.endswith((".yaml", ".yml")):
             self.notify(
-                Log.SUCCESS,
-                f"Filters imported successfully: {os.path.basename(file_path)}",
+                Log.WARNING,
+                f"Invalid file format. Only YAML files are supported ({os.path.basename(file_path)})",
             )
+            return
+
+        with open(file_path, "r", encoding="UTF-8") as file:
+            filters_dict = yaml.safe_load(file)
+
+        for filter_name, filter_data in filters_dict["filters"].items():
+            bounds = filter_data["bounds"]
+            filter_color = filter_data["color"]
+
+            self.add_filter(filter_name, bounds, filter_color)
+
+        self.notify(
+            Log.SUCCESS,
+            f"Filters imported successfully: {os.path.basename(file_path)}",
+        )
 
     def export_filter(self):
         if not self.filters_list:

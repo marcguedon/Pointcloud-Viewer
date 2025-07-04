@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
 from controller.controller import Controller
+from view.droppable_tree_widget import DroppableTreeWidget
 from view.filter_widget import FilterWidget
 from model.filter import Filter
 
@@ -38,7 +39,7 @@ class FiltersLayout(QVBoxLayout):
         import_filter_btn = QPushButton("Import Filters")
         import_filter_btn.setToolTip("Import filters")
         import_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        import_filter_btn.clicked.connect(self.controller.import_filter)
+        import_filter_btn.clicked.connect(self.controller.import_filters_files)
         filter_file_layout.addWidget(import_filter_btn)
 
         export_filter_btn = QPushButton("Export Filters")
@@ -47,7 +48,7 @@ class FiltersLayout(QVBoxLayout):
         export_filter_btn.clicked.connect(self.controller.export_filter)
         filter_file_layout.addWidget(export_filter_btn)
 
-        self.filters_tree = QTreeWidget()
+        self.filters_tree = DroppableTreeWidget(self.controller.load_filters)
         self.filters_tree.setHeaderLabel("Filters")
         self.filters_tree.setIndentation(0)
         self.filters_tree.setContextMenuPolicy(Qt.CustomContextMenu)

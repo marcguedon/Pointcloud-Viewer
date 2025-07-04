@@ -80,7 +80,9 @@ class ViewerLayout(QVBoxLayout):
     def create_ui(self):
         self.setContentsMargins(0, 0, 0, 0)
 
-        self.plotter = PointcloudsInteractor()
+        self.plotter = PointcloudsInteractor(
+            self.controller.load_pointcloud, self.controller.load_filters
+        )
         self.plotter.set_background("white")
         self.plotter.add_axes()
         # self.add_origin_axes(line_width=0.5)
@@ -203,8 +205,8 @@ class ViewerLayout(QVBoxLayout):
     def update_socket_pointcloud(self, pointcloud: pv.PolyData):
         if len(self.socket_pointclouds) == self.persistence:
             self.socket_pointclouds.pop(0)
-            
-        self.socket_pointclouds.append(pointcloud) 
+
+        self.socket_pointclouds.append(pointcloud)
         self.update_viewer()
 
     def set_socket_persistence(self, persistence: int):

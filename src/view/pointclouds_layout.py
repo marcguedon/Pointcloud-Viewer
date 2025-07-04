@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
 from controller.controller import Controller
 from view.pointcloud_widget import PointcloudWidget
+from view.droppable_tree_widget import DroppableTreeWidget
 from model.pointcloud import Pointcloud
 
 
@@ -22,10 +23,10 @@ class PointcloudsLayout(QVBoxLayout):
         load_pointcloud_btn = QPushButton("Load pointcloud")
         load_pointcloud_btn.setToolTip("Load pointcloud")
         load_pointcloud_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        load_pointcloud_btn.clicked.connect(self.controller.load_pointclouds)
+        load_pointcloud_btn.clicked.connect(self.controller.load_pointcloud_files)
         self.addWidget(load_pointcloud_btn)
 
-        self.pointclouds_tree = QTreeWidget()
+        self.pointclouds_tree = DroppableTreeWidget(self.controller.load_pointcloud)
         self.pointclouds_tree.setHeaderLabel("Pointclouds")
         self.pointclouds_tree.setIndentation(0)
         self.pointclouds_tree.setContextMenuPolicy(Qt.CustomContextMenu)
