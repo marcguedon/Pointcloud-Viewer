@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QPushButton,
-    QTreeWidget,
     QTreeWidgetItem,
 )
 from PyQt5.QtCore import Qt

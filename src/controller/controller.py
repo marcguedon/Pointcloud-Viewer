@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
 from controller.pointcloud_service import PointcloudService
 from controller.filter_service import FilterService
-from view.help_window import HelpWindow
 from model.pointcloud import Pointcloud
 from model.filter import Filter
 from utils.log import Log
@@ -59,8 +58,6 @@ class Controller(QObject):
         self.pointclouds_list: list[Pointcloud] = []
         self.filters_list: list[Filter] = []
 
-        self.help_window = None
-
         self.theme: Theme = Theme.LIGHT_MODE
 
     # APPLICATION
@@ -68,9 +65,6 @@ class Controller(QObject):
         self.notify_signal.emit(log, message)
 
     def close_application(self):
-        if self.help_window is not None:
-            self.help_window.close()
-
         self.close_application_signal.emit()
 
     def change_theme(self):
@@ -85,13 +79,6 @@ class Controller(QObject):
     def show_hide_axes(self):
         self.show_hide_axes_signal.emit()
         self.notify(Log.INFO, "Axes visibility toggled")
-
-    def open_help(self):
-        if self.help_window is None:
-            self.help_window = HelpWindow()
-
-        self.help_window.show()
-        self.help_window.raise_()
 
     # SOCKET
     def open_socket_window(self):

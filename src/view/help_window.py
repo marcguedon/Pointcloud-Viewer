@@ -1,5 +1,6 @@
 import os
 import json
+import qdarkstyle
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -9,11 +10,16 @@ from PyQt5.QtWidgets import (
     QSplitter,
 )
 from PyQt5.QtCore import Qt
+from controller.controller import Controller
+from utils.theme import Theme
 
 
 class HelpWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.controller: Controller = Controller()
+        self.controller.change_theme_signal.connect(self.change_theme)
 
         self.setWindowTitle("Help")
         self.resize(700, 400)
@@ -77,3 +83,9 @@ class HelpWindow(QWidget):
             section_info = self.help_content.get(category, {})
             section_text = section_info.get(category, f"Section : {category}")
             self.content_text_browser.setHtml(section_text)
+
+    def change_theme(self, theme: Theme):
+        if theme == Theme.DARK_MODE:
+            self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        else:
+            self.setStyleSheet("")
