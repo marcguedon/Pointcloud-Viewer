@@ -25,7 +25,7 @@ class FiltersLayout(QVBoxLayout):
     def create_ui(self):
         self.setSpacing(5)
 
-        add_filter_btn = QPushButton("Add Filter")
+        add_filter_btn = QPushButton("Add filter")
         add_filter_btn.setToolTip("Add filter")
         add_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
         add_filter_btn.clicked.connect(self.on_add_filter_button_clicked)
@@ -35,13 +35,13 @@ class FiltersLayout(QVBoxLayout):
         filter_file_layout.setSpacing(5)
         self.addLayout(filter_file_layout)
 
-        import_filter_btn = QPushButton("Import Filters")
+        import_filter_btn = QPushButton("Import filters")
         import_filter_btn.setToolTip("Import filters")
         import_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
         import_filter_btn.clicked.connect(self.controller.import_filters_files)
         filter_file_layout.addWidget(import_filter_btn)
 
-        export_filter_btn = QPushButton("Export Filters")
+        export_filter_btn = QPushButton("Export filters")
         export_filter_btn.setToolTip("Export filters")
         export_filter_btn.setCursor(QCursor(Qt.PointingHandCursor))
         export_filter_btn.clicked.connect(self.controller.export_filter)

@@ -203,7 +203,7 @@ class ViewerLayout(QVBoxLayout):
         )
 
     def update_socket_pointcloud(self, pointcloud: pv.PolyData):
-        if len(self.socket_pointclouds) == self.persistence:
+        if self.persistence != -1 and len(self.socket_pointclouds) == self.persistence:
             self.socket_pointclouds.pop(0)
 
         self.socket_pointclouds.append(pointcloud)

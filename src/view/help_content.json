@@ -1,28 +1,32 @@
 {
     "Application": {
-        "Application": ""
+        "Application": "The application is a 3D pointcloud viewer. It allows to load pointclouds, apply filters and visualize the results in a 3D view.",
+        "Change theme": "<h2>How to change the theme</h2><p>Click on the 'Change theme' submenu available in the 'View' menu. The two themes are normal theme (light theme) and dark theme.</p>",
+        "Show/hide axis": "<h2>How to show/hide the axis</h2><p>Click on the 'Show/hide axis' submenu available in the 'View' menu.</p>",
+        "Open debug window": "<h2>How to open the debug window</h2><ul><li>Click on the 'Open debug window' submenu available in the 'View' menu.</li><li>Click of the '...' button (at the right of the info label)</li></ul>"
     },
     "Pointclouds": {
-        "Pointclouds": "Test Pointclouds",
-        "Add pointclouds": "<p>To add a pointcloud, click on 'Load pointcloud' button and choose a pointcloud file. It is also possible to open the 'Data' menu and click on 'Load pointclouds'.</p>",
-        "Show/hide pointcloud": "<p>To show/hide a pointcloud, click on the checkbox of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Toggle visibility'.</p>",
-        "Rename pointcloud": "<p>To rename a pointcloud, double click on the label of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Rename'.</p>",
-        "Delete pointcloud": "<p>To delete a pointcloud, click on the delete button of the corresponding pointcloud. It is also possible to right click on the corresponding pointcloud and click on 'Delete'.</p>"
+        "Pointclouds": "Pointclouds are the main data of the application. They are displayed in the 3D view and can be filtered using filters.",
+        "Add pointclouds": "<h2>How to add pointclouds</h2><ul><li>Click on 'Load pointcloud' button. A file dialog will be displayed. Choose the files to add the pointclouds.</li><li>Click on the 'Load pointclouds' submenu available in the 'Data' menu. As the 'Load pointclouds' button, it will open a file dialog.</li></ul>",
+        "Show/hide pointcloud": "<h2>How to show/hide a filter</h2><ul><li>Click on the checkbox of the corresponding pointcloud.</li><li>Right click on the corresponding pointcloud and click on 'Toggle visibility'.</li></ul>",
+        "Rename pointcloud": "<h2>How to rename a pointcloud</h2><ul><li>Double click on the label of the corresponding pointcloud.</li><li>Right click on the corresponding pointcloud and click on 'Rename'.</li></ul><p>Change the name of the pointcloud and press 'Enter' to apply the changes. If the new name is already taken, it will not be applied.</p>",
+        "Delete pointcloud": "<h2>How to delete a pointcloud</h2><ul><li>Click on the delete button of the corresponding pointcloud.</li><li>Right click on the corresponding pointcloud and click on 'Delete'.</li></ul></p>"
     },
     "Filters": {
-        "Filters": "Test Filters",
-        "Add filters": "<h2>How to add filters</h2><h3>'Add filter' buttons</h3><p>To add a filter, click on the 'Add filter' button.</p><p>A 'Add filter' button is also available in the 'Data' menu.</p><h3>'Import filters' button</h3><p>It is also possible to import filters, by clicking on the 'Import filters' button.</p>",
-        "Show/hide filter": "<h2>How to show/hide a filter</h2><p></p>",
-        "Rename filter": "Test Rename filter",
-        "Change filter color": "Test Change filter color",
-        "Change filter bounds": "Test Change filter bounds",
-        "Export filters": "Test Export filters",
-        "Delete filter": "Test Delete filter"
+        "Filters": "Filters allow to select a subset of points in the pointclouds based on their coordinates.",
+        "Add filters": "<h2>How to add filters</h2><ul><li>Click on the 'Add filter' button. A filter will be added to the list of filters with default values:<ul><li>Color: black</li><li>X min: 0</li><li>X max: 1</li><li>Y min: 0</li><li>Y max: 1</li><li>Z min: 0</li><li>Z max: 1</li></ul></li><li>Click on the 'Add filter' submenu available in the 'Data' menu. As the 'Add filters' button, it will add a default filter.</li><li>Click on the 'Import filters' button and choose the filters files to import the filters. A file dialog will be displayed. Choose the filters files to add them. The filters with their values will be added.</li></ul>",
+        "Show/hide filter": "<h2>How to show/hide a filter</h2><ul><li>Click on the checkbox of the corresponding filter.</li><li>Right click on the corresponding filter and click on 'Toggle visibility'.</li></ul>",
+        "Rename filter": "<h2>How to rename a filter</h2><ul><li>Double click on the label of the corresponding filter.</li><li>Right click on the corresponding filter and click on 'Rename'.</li></ul><p>Change the name of the filter and press 'Enter' to apply the changes. If the new name is already taken, it will not be applied.</p>",
+        "Change filter color": "<h2>How to change the color of a filter</h2><ul><li>Click on the color button of the corresponding filter.</li><li>Right click on the corresponding filter and click on 'Change color'.</li></ul><p>A color picker will be displayed. Choose a color and click on 'OK' to apply the changes.</p>",
+        "Change filter bounds": "<h2>How to change the bounds of a filter</h2><ul><li>Click on the gear button of the corresponding filter.</li><li>Right click on the corresponding filter and click on 'Edit bounds'.</li></ul><p>A dialog will be displayed with the current bounds of the filter. Changing the values will directly apply them.</p>",
+        "Export filters": "<h2>How to export filters</h2><p>Click on the 'Export filters' button. A file dialog will be displayed. Choose the file to export the filters. The filters with their values will be exported.</p>",
+        "Delete filter": "<h2>How to delete a filter</h2><ul><li>Click on the delete button of the corresponding filter.</li><li>Right click on the corresponding filter and click on 'Delete'.</li></ul></p>"
     },
     "Socket": {
-        "Socket": "Test Socket",
-        "Start socket": "Test Start socket",
-        "Pause socket": "Test Pause socket",
-        "Stop socket": "Test Stop socket"
+        "Socket": "Sockets allow to connect to a server and receive pointclouds data.",
+        "Socket window": "<h2>How to open the socket window</h2><p>Click on the 'Open socket window' submenu available in the 'Data' menu.</p>",
+        "Start socket": "<h2>How to start the socket</h2><p>First, choose the socket port number and the persistence availables in the socket window, then click on the 'Start' button. The port number must be the same as the one used by the socket client to send pointclouds. The persistence is the number of pointclouds (received by the socket) shown (it's a sliding window).</p>",
+        "Pause socket": "<h2>How to pause the socket</h2><p>Click on the 'Pause' button available in the socket window. It will stop updating the viewer with received pointclouds, but the previous pointclouds received by the socket and already shown will stay.</p>",
+        "Stop socket": "<h2>How to stop the socket</h2><p>Click on the 'Stop' button available in the socket window. It will stop the socket and close the connection with the server. The pointclouds received by the socket and already shown will disappear.</p>"
     }
 }

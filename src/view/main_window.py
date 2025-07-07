@@ -80,7 +80,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction("Load pointclouds", self.controller.load_pointcloud_files)
         file_menu.addAction("Open socket window", self.controller.open_socket_window)
         file_menu.addSeparator()
-        file_menu.addAction("Add Filter", self.controller.add_filter)
+        file_menu.addAction("Import filters", self.controller.import_filters_files)
+        file_menu.addAction("Add filter", self.controller.add_filter)
         file_menu.addSeparator()
         file_menu.addAction("Quit", self.controller.close_application)
 

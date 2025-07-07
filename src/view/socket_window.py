@@ -79,7 +79,7 @@ class SocketWindow(QMdiSubWindow):
         self.persistence_slider = QSlider(Qt.Horizontal)
         self.persistence_slider.setToolTip("Choose pointclouds persistence")
         self.persistence_slider.setCursor(QCursor(Qt.PointingHandCursor))
-        self.persistence_slider.setMinimum(0)
+        self.persistence_slider.setMinimum(-1)
         self.persistence_slider.setMaximum(10)
         self.persistence_slider.setSingleStep(1)
         self.persistence_slider.valueChanged.connect(

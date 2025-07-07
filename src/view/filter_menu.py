@@ -24,7 +24,7 @@ class FilterMenu(QMenu):
         change_color_action.triggered.connect(self.change_color_filter)
         self.addAction(change_color_action)
 
-        edit_action = QAction("Edit", self)
+        edit_action = QAction("Edit bounds", self)
         edit_action.triggered.connect(self.edit_filter)
         self.addAction(edit_action)
 
